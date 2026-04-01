@@ -10,6 +10,7 @@ export default function ModelPage() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<number | null>(null)
+  const [level, setLevel] = useState<string | null>(null)
 
   const handleFile = async (selectedFile: File) => {
     setFile(selectedFile)
@@ -39,6 +40,13 @@ export default function ModelPage() {
       }
 
       const percentage = data.probability * 100
+      if (percentage<=33){
+        setLevel("Low")
+      } else if (percentage > 33 && percentage <= 66) {
+        setLevel("Medium")
+      } else {
+        setLevel("High")
+      }
       setResult(percentage)
       setLoading(false)
     } catch (err) {
@@ -53,6 +61,7 @@ export default function ModelPage() {
     setFile(null)
     setResult(null)
     setLoading(false)
+    setLevel(null)
   }
 
   return (
@@ -226,8 +235,13 @@ export default function ModelPage() {
                 <div className="text-center py-12">
                   <h3 className="text-xl font-semibold mb-6 text-cyan-700">Immunotherapy Success Probability</h3>
                   <div className="text-7xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent mb-8">
-                    {result.toFixed(1)}%
+                    {result.toFixed(2)}%
                   </div>
+                  {level && (
+                    <p className="text-lg text-gray-700">
+                      Immunotherapy Success Level: <span className="font-semibold text-cyan-700">{level}</span>
+                    </p>
+                  )}
                   <Button
                     onClick={resetUpload}
                     className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white"
