@@ -11,6 +11,8 @@ export default function ModelPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<number | null>(null)
   const [level, setLevel] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+
 
   const handleFile = async (selectedFile: File) => {
     setFile(selectedFile)
@@ -42,10 +44,13 @@ export default function ModelPage() {
       const percentage = data.probability * 100
       if (percentage<=33){
         setLevel("Low")
+        setMessage("Using a novel machine learning framework, we predict a low probability of immunotherapy success. Consider alternative treatments or further determine whether immunotherapy will be effective for you. Based on this, you seem to be a non-responder to PD-1 immunotherapy.")
       } else if (percentage > 33 && percentage <= 66) {
         setLevel("Medium")
+        setMessage("Using a novel machine learning framework, we predict a moderate probability of immunotherapy success. Immunotherapy may be worth considering, but further evaluation and discussion with your healthcare provider are recommended to determine the best treatment approach. There is a possibility that you may respond to PD-1 immunotherapy, but additional factors should be considered before making a treatment decision.")
       } else {
         setLevel("High")
+        setMessage("Using a novel machine learning framework, we predict a high probability of immunotherapy success. Immunotherapy may be a promising treatment option to consider. You may be a strong candidate for PD-1 immunotherapy, but it's important to discuss this with your healthcare provider to determine the best treatment plan based on your individual circumstances. Based on this, you seem to be a responder to PD-1 immunotherapy.")
       }
       setResult(percentage)
       setLoading(false)
@@ -62,6 +67,7 @@ export default function ModelPage() {
     setResult(null)
     setLoading(false)
     setLevel(null)
+    setMessage(null)
   }
 
   return (
@@ -240,6 +246,11 @@ export default function ModelPage() {
                   {level && (
                     <p className="text-lg text-gray-700">
                       Immunotherapy Success Level: <span className="font-semibold text-cyan-700">{level}</span>
+                    </p>
+                  )}
+                  {message && (
+                    <p className="mt-4 text-gray-700 max-w-xl mx-auto leading-relaxed">
+                      {message}
                     </p>
                   )}
                   <Button
