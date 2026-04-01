@@ -180,63 +180,6 @@ export default function ModelPage() {
           </div>
         </section>
 
-        {/* KNN Model Section */}
-        <section className="container mx-auto px-4 mb-24 bg-gradient-to-b from-white/50 to-cyan-50/30 -mx-4 px-4 py-24">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-              K-Nearest Neighbors (KNN) Classification Model
-            </h2>
-
-            <div className="grid md:grid-cols-2 gap-8 mb-12">
-              {/* Video Placeholder 1 */}
-              <div className="bg-gradient-to-br from-cyan-100/40 to-blue-100/30 border border-cyan-200 rounded-lg aspect-video flex items-center justify-center shadow-sm">
-                <div className="text-center p-8">
-                 <video
-                    src="/videos/knn_1_vid.mov"
-                    controls
-                    className="w-full h-full rounded-lg border border-cyan-200 object-cover"
-                  ></video>
-                </div>
-              </div>
-
-              {/* Video Placeholder 2 */}
-              <div className="bg-gradient-to-br from-blue-100/30 to-teal-100/40 border border-cyan-200 rounded-lg aspect-video flex items-center justify-center shadow-sm">
-                <div className="text-center p-8">
-                  <video
-                    src="/videos/knn_2_vid.mov"
-                    controls
-                    className="w-full h-full rounded-lg border border-cyan-200 object-cover"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white/80 border border-cyan-200 rounded-lg p-8 shadow-sm">
-              <h3 className="text-xl font-semibold mb-4 text-teal-700">How It Works</h3>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Our KNN model analyzes tumor gene expression profiles by comparing them to known patient outcomes. The
-                algorithm identifies the K most similar historical cases and predicts treatment response based on their
-                collective outcomes.
-              </p>
-              <ul className="space-y-2 text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-600 mt-1">→</span>
-                  <span>Processes high-dimensional transcriptomic data from tumor samples</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-teal-600 mt-1">→</span>
-                  <span>Identifies similar patient profiles using distance metrics in gene expression space</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-1">→</span>
-                  <span>Generates probabilistic predictions based on nearest neighbor outcomes</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </section>
 
         {/* Immunotherapy Prediction Tool */}
         <section className="container mx-auto px-4 mb-24">
