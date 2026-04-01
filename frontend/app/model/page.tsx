@@ -81,7 +81,7 @@ export default function ModelPage() {
     setResult(null)
 
     try {
-      const response = await fetch(`/samples/${sampleFile}`)
+      const response = await fetch(`${sampleFile}`)
       const blob = await response.blob()
       const file = new File([blob], sampleFile, { type: "text/csv" })
       handleFile(file)
