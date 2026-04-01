@@ -3,7 +3,16 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Upload } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Progress } from "@/components/ui/progress"
+import { ArrowLeft, Upload, CheckCircle2, AlertCircle, XCircle } from "lucide-react"
 import Image from "next/image"
 
 export default function ModelPage() {
@@ -12,6 +21,7 @@ export default function ModelPage() {
   const [result, setResult] = useState<number | null>(null)
   const [level, setLevel] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [showResultDialog, setShowResultDialog] = useState(false)
 
 
   const handleFile = async (selectedFile: File) => {
@@ -54,6 +64,7 @@ export default function ModelPage() {
       }
       setResult(percentage)
       setLoading(false)
+      setShowResultDialog(true)
     } catch (err) {
       console.error("Prediction error:", err)
       alert("Prediction failed")
@@ -68,7 +79,46 @@ export default function ModelPage() {
     setLoading(false)
     setLevel(null)
     setMessage(null)
+    setShowResultDialog(false)
   }
+
+  const getLevelConfig = (level: string | null) => {
+    switch (level) {
+      case "High":
+        return {
+          icon: CheckCircle2,
+          color: "text-emerald-600",
+          bgColor: "bg-emerald-50",
+          borderColor: "border-emerald-200",
+          progressColor: "bg-emerald-500",
+          badgeBg: "bg-emerald-100",
+          badgeText: "text-emerald-700",
+        }
+      case "Medium":
+        return {
+          icon: AlertCircle,
+          color: "text-amber-600",
+          bgColor: "bg-amber-50",
+          borderColor: "border-amber-200",
+          progressColor: "bg-amber-500",
+          badgeBg: "bg-amber-100",
+          badgeText: "text-amber-700",
+        }
+      case "Low":
+      default:
+        return {
+          icon: XCircle,
+          color: "text-rose-600",
+          bgColor: "bg-rose-50",
+          borderColor: "border-rose-200",
+          progressColor: "bg-rose-500",
+          badgeBg: "bg-rose-100",
+          badgeText: "text-rose-700",
+        }
+    }
+  }
+
+  const levelConfig = getLevelConfig(level)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50">
@@ -237,25 +287,19 @@ export default function ModelPage() {
                 </div>
               )}
 
-              {result !== null && (
+              {result !== null && !showResultDialog && (
                 <div className="text-center py-12">
-                  <h3 className="text-xl font-semibold mb-6 text-cyan-700">Immunotherapy Success Probability</h3>
-                  <div className="text-7xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent mb-8">
-                    {result.toFixed(2)}%
-                  </div>
-                  {level && (
-                    <p className="text-lg text-gray-700">
-                      Immunotherapy Success Level: <span className="font-semibold text-cyan-700">{level}</span>
-                    </p>
-                  )}
-                  {message && (
-                    <p className="mt-4 text-gray-700 max-w-xl mx-auto leading-relaxed">
-                      {message}
-                    </p>
-                  )}
+                  <p className="text-gray-600 mb-4">Analysis complete</p>
+                  <Button
+                    onClick={() => setShowResultDialog(true)}
+                    className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white mr-3"
+                  >
+                    View Results
+                  </Button>
                   <Button
                     onClick={resetUpload}
-                    className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white"
+                    variant="outline"
+                    className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
                   >
                     Upload Another File
                   </Button>
@@ -303,7 +347,80 @@ export default function ModelPage() {
         </section>
       </div>
 
-     
+      {/* Results Dialog */}
+      <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+        <DialogContent className="sm:max-w-xl bg-white border-0 shadow-2xl">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-2xl font-bold text-center text-gray-800">
+              Immunotherapy Analysis Results
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-500">
+              Prediction based on uploaded transcriptomic data
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-6 space-y-6">
+            {/* Classification Badge */}
+            <div className="flex flex-col items-center gap-4">
+              <div className={`p-4 rounded-full ${levelConfig.bgColor} ${levelConfig.borderColor} border-2`}>
+                <levelConfig.icon className={`w-10 h-10 ${levelConfig.color}`} />
+              </div>
+              <div className={`px-6 py-2 rounded-full ${levelConfig.badgeBg} ${levelConfig.borderColor} border`}>
+                <span className={`text-xl font-bold ${levelConfig.badgeText}`}>
+                  {level} Probability
+                </span>
+              </div>
+            </div>
+
+            {/* Percentage Display */}
+            <div className="text-center">
+              <div className="text-6xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent mb-2">
+                {result?.toFixed(1)}%
+              </div>
+              <p className="text-sm text-gray-500">Success Probability Score</p>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="px-4">
+              <div className="relative h-3 w-full overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className={`h-full transition-all duration-700 ease-out rounded-full ${levelConfig.progressColor}`}
+                  style={{ width: `${result || 0}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-1 text-xs text-gray-400">
+                <span>0%</span>
+                <span>50%</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            {/* Advice Section */}
+            {message && (
+              <div className={`p-4 rounded-lg ${levelConfig.bgColor} ${levelConfig.borderColor} border`}>
+                <h4 className={`font-semibold mb-2 ${levelConfig.color}`}>Clinical Guidance</h4>
+                <p className="text-sm text-gray-700 leading-relaxed">{message}</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+            <Button
+              onClick={resetUpload}
+              variant="outline"
+              className="w-full sm:w-auto border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+            >
+              Upload Another File
+            </Button>
+            <Button
+              onClick={() => setShowResultDialog(false)}
+              className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
