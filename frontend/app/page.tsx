@@ -63,14 +63,7 @@ export default function HomePage() {
                 Explore Our Model <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              asChild
-              className="text-lg bg-white/50 border-cyan-300 text-cyan-700 hover:bg-cyan-50"
-            >
-              <a href="#about">Learn More</a>
-            </Button>
+    
           </div>
         </div>
 

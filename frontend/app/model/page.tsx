@@ -322,10 +322,11 @@ export default function ModelPage() {
             <div className="mt-8 bg-gradient-to-br from-cyan-100/40 to-blue-100/30 border border-cyan-200 rounded-lg p-6 shadow-sm">
               <h3 className="font-semibold mb-3 text-teal-700">About This Model</h3>
               <p className="text-sm text-gray-700 leading-relaxed">
-                This prediction tool uses a neural network trained on head and neck cancer patient data to predict
-                immunotherapy response rates. The model analyzes gene expression patterns to identify biomarkers
+                This prediction tool uses a penalized linear regression trained on head and neck cancer transcriptomic data to predict
+                immunotherapy response rates. The model analyzes gene expression patterns from a specially chosen 51-gene panel to identify biomarkers
                 associated with treatment success, providing clinicians with data-driven insights for personalized
-                treatment planning.
+                treatment planning. Using Differential Gene Expression analysis, we identified genes that are significantly associated with immunotherapy response,
+                optimizing the efficiency of the model while minimzing computational costs. 
               </p>
             </div>
           </div>
