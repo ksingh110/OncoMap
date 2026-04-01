@@ -15,9 +15,9 @@ import { Upload, CheckCircle2, AlertCircle, XCircle, FlaskConical, FileText } fr
 import Image from "next/image"
 
 const TEST_SAMPLES = [
-  { name: "High Response Sample", description: "Responder profile", file: "frontend/public/samples/high_response_sample.csv" },
-  { name: "Medium Response Sample", description: "Moderate responder", file: "frontend/public/samples/medium_response_sample.csv" },
-  { name: "Low Response Sample", description: "Non-responder profile", file: "frontend/public/samples/low_response_sample.csv" },
+  { name: "High Response Sample", description: "Responder profile", file: "/Users/krishaysingh/Documents/conrad-challenge-deployment/frontend/public/samples/high_response_sample.csv" },
+  { name: "Medium Response Sample", description: "Moderate responder", file: "/Users/krishaysingh/Documents/conrad-challenge-deployment/frontend/public/samples/medium_response_sample.csv" },
+  { name: "Low Response Sample", description: "Non-responder profile", file: "/Users/krishaysingh/Documents/conrad-challenge-deployment/frontend/public/samples/low_response_sample.csv" },
 ]
 
 export default function ModelPage() {
