@@ -124,8 +124,8 @@ export default function HomePage() {
               Our Mission
             </h2>
             <p className="text-xl text-gray-700 leading-relaxed mb-8">
-              To democratize access to hyper-personalized cancer care by transforming tumor transcriptomic data into
-              precise, actionable treatment recommendations that improve head and neck cancer patient outcomes and quality of life.
+              To democratize access to hyper-personalized cancer treatment by transforming tumor transcriptomic data into
+              precise treatment recommendations that improve head and neck cancer patient outcomes and quality of life.
             </p>
             <div className="grid md:grid-cols-3 gap-8 mt-16">
               <div className="text-center">
@@ -154,10 +154,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="py-24 bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready To Join Our Mission to Transform Cancer Care?</h2>
           <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
             Try out first-hand how our predictive models can enhance head and neck cancer clinical decision-making processes.
           </p>
