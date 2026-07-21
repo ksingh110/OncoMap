@@ -8,27 +8,23 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "OncoMap - Hyper-Personalized Cancer Care",
-  description: "Translating Tumor Transcriptomics into Hyper-Personalized Cancer Care",
-  generator: "v0.app",
+  metadataBase: new URL("https://oncomap.us"),
+
+  title: "OncoMap | Hyper-Personalized Cancer Care",
+  description:
+    "Translating Tumor Transcriptomics into Hyper-Personalized Cancer Care.",
+
   icons: {
     icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
+      { url: "/favicon.ico" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
     ],
-    apple: "/apple-icon.png",
+    apple: "/apple-touch-icon.png",
   },
-}
+
+  manifest: "/site.webmanifest",
+};
 
 export default function RootLayout({
   children,
