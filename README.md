@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://oncomap.us" target="_blank">
-    <img src="https://github.com/user-attachments/assets/1b97b0ed-58fa-4779-b199-a28b7f4204e3" width="600" alt="OncoMap Logo">
+    <img src="https://github.com/user-attachments/assets/1b97b0ed-58fa-4779-b199-a28b7f4204e3" width="400" alt="OncoMap Logo">
   </a>
 </p>
 <h1 align="center">OncoMap</h1>
