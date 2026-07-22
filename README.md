@@ -13,6 +13,17 @@
 Machine Learning • Transcriptomics • Precision Oncology
 </p>
 
+<p align="center">
+
+<a href="https://oncomap.us">
+<img src="https://img.shields.io/badge/Website-oncomap.us-blue?style=for-the-badge">
+</a>
+<img src="https://img.shields.io/badge/R-4.x-276DC3?style=for-the-badge&logo=r&logoColor=white">
+<img src="https://img.shields.io/badge/Python-3.11-yellow?style=for-the-badge&logo=python">
+
+
+</p>
+
 ## About
 OncoMap is a machine learning platform that predicts whether patients with head and neck cancer are likely to respond to PD-1 immunotherapy using RNA sequencing data before treatment begins. Driven by transcriptomics and expandable to other cancers, OncoMap delivers more than just a black-box prediction; rather, it lands the patient on a reference landscape. Created after rigorous bulk RNA-seq preprocessing and batch effect correction, this reference landscape uses the gene expression counts of 1000+ patients to guide by showcasing trends in covariates and other variables that the cancer may provide.
 
