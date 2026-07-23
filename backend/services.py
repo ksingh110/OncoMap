@@ -8,18 +8,10 @@ import joblib
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]
-TM_DIR = ROOT / "Tumor Map Projection"
-IT_DIR = ROOT / "Immunotherapy Response Prediction"
-
-# Streamlit OncoMap uses this module for map projection and neighborhood tables.
-
-
 def _load_knn_projector_module():
     import importlib.util
     import sys
-
-    mod_path = TM_DIR / "knn_map_projection.py"
+    mod_path = "knn_map_projection.py"
     spec = importlib.util.spec_from_file_location("knn_map_projection", str(mod_path))
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Could not import module from {mod_path}")
@@ -30,12 +22,7 @@ def _load_knn_projector_module():
 
 
 def parse_uploaded_expression(file_bytes: bytes, filename: str) -> pd.DataFrame:
-    """
-    Returns expression DataFrame genes x samples (single sample preferred).
-    Accepted:
-      - 2-column table: gene, value
-      - wide table: first col gene, remaining sample columns
-    """
+
     if filename.lower().endswith(".tsv"):
         df = pd.read_csv(pd.io.common.BytesIO(file_bytes), sep="\t")
     else:
@@ -86,7 +73,7 @@ def load_artifacts(
     )
 
     response_model = joblib.load("projector_data/response_model.pkl")
-    response_meta = json.loads("projector_data/response_model_meta.json").read_text(encoding="utf-8")
+    response_meta = json.loads(Path("projector_data/response_model_meta.json").read_text(encoding="utf-8"))
     color_fields = {
         "dataset": "dataset" if "dataset" in ref_coords.columns else None,
         "gender": "gender" if "gender" in ref_meta.columns else None,
