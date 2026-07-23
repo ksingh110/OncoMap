@@ -63,18 +63,14 @@ class AppArtifacts:
 
 
 def load_artifacts(
-    map_artifact_dir: Path | None = None,
-    response_artifact_dir: Path | None = None,
+   
 ) -> AppArtifacts:
-    map_dir = map_artifact_dir or (TM_DIR / "projector_data")
-    resp_dir = response_artifact_dir or (IT_DIR / "projector_data")
-
-    ref_log2 = pd.read_parquet(map_dir / "ref_log2tpm.parquet")
-    ref_coords = pd.read_parquet(map_dir / "ref_coords.parquet")
-    ref_coords_proj_path = map_dir / "ref_coords_projector.parquet"
-    ref_coords_proj = pd.read_parquet(ref_coords_proj_path) if ref_coords_proj_path.exists() else ref_coords
-    ref_meta = pd.read_parquet(map_dir / "ref_meta.parquet")
-    fgenes = json.loads((map_dir / "feature_genes.json").read_text(encoding="utf-8")).get("feature_genes", [])
+    ref_log2 = pd.read_parquet("backend/projector_data/ref_log2tpm.parquet")
+    ref_coords = pd.read_parquet("backend/projector_data/ref_coords.parquet")
+    ref_coords_proj_path = "backend/projector_data/ref_coords_projector.parquet"
+    ref_coords_proj = pd.read_parquet(ref_coords_proj_path)
+    ref_meta = pd.read_parquet("backend/projector_data/ref_meta.parquet")
+    fgenes = json.loads(("backend/projector_data/feature_genes.json").read_text(encoding="utf-8")).get("feature_genes", [])
     if "sampleName" not in ref_meta.columns:
         raise ValueError("ref_meta.parquet must include sampleName")
     ref_meta = ref_meta.set_index("sampleName")
@@ -89,8 +85,8 @@ def load_artifacts(
         umap_cols=("VST_UMAP1_2D", "VST_UMAP2_2D"),
     )
 
-    response_model = joblib.load(resp_dir / "response_model.pkl")
-    response_meta = json.loads((resp_dir / "response_model_meta.json").read_text(encoding="utf-8"))
+    response_model = joblib.load("backend/projector_data/response_model.pkl")
+    response_meta = json.loads("backend/projector_data/response_model_meta.json").read_text(encoding="utf-8")
     color_fields = {
         "dataset": "dataset" if "dataset" in ref_coords.columns else None,
         "gender": "gender" if "gender" in ref_meta.columns else None,
