@@ -69,7 +69,8 @@ def load_artifacts(
     ref_coords = pd.read_parquet("projector_data/ref_coords.parquet")
     ref_coords_proj = pd.read_parquet("projector_data/ref_coords_projector.parquet")
     ref_meta = pd.read_parquet("projector_data/ref_meta.parquet")
-    fgenes = json.loads(("projector_data/feature_genes.json").read_text(encoding="utf-8")).get("feature_genes", [])
+    from pathlib import Path
+    fgenes = json.loads(Path("projector_data/feature_genes.json").read_text(encoding="utf-8")).get("feature_genes", [])
     if "sampleName" not in ref_meta.columns:
         raise ValueError("ref_meta.parquet must include sampleName")
     ref_meta = ref_meta.set_index("sampleName")
