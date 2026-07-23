@@ -22,6 +22,7 @@ import {
   ChevronDown,
 } from "lucide-react"
 import Image from "next/image"
+import ReferenceMap from "./ReferenceMap"
 
 const TEST_SAMPLES = [
   { name: "High Response Sample", file: "/samples/high_response_sample.csv" },
@@ -34,6 +35,13 @@ type Insights = {
   [key: string]: unknown
 }
 
+type PatientPoint = {
+  umap1: number
+  umap2: number
+  hpvScore?: number | null
+  age?: number | null
+}
+
 export default function ModelPage() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
@@ -41,6 +49,7 @@ export default function ModelPage() {
   const [level, setLevel] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [insights, setInsights] = useState<Insights | null>(null)
+  const [patientPoint, setPatientPoint] = useState<PatientPoint | null>(null)
   const [showResultDialog, setShowResultDialog] = useState(false)
 
   // Optional clinical fields (mirrors the old "Optional clinical fields
@@ -95,6 +104,14 @@ export default function ModelPage() {
       }
       setResult(percentage)
       setInsights(data.insights ?? null)
+      if (data.summary?.projected_umap1 != null && data.summary?.projected_umap2 != null) {
+        setPatientPoint({
+          umap1: data.summary.projected_umap1,
+          umap2: data.summary.projected_umap2,
+          hpvScore: data.summary.projected_hpv_score ?? null,
+          age: data.summary.projected_age ?? null,
+        })
+      }
       setLoading(false)
       setShowResultDialog(true)
     } catch (err) {
@@ -128,6 +145,7 @@ export default function ModelPage() {
     setLevel(null)
     setMessage(null)
     setInsights(null)
+    setPatientPoint(null)
     setShowResultDialog(false)
   }
 
@@ -400,6 +418,15 @@ export default function ModelPage() {
             </div>
           </div>
         </section>
+
+        {/* Reference Landscape Map */}
+        {patientPoint && (
+          <section className="container mx-auto px-4 mb-12">
+            <div className="max-w-5xl mx-auto">
+              <ReferenceMap patient={patientPoint} />
+            </div>
+          </section>
+        )}
 
         {/* About Section - Compact */}
         <section className="container mx-auto px-4 mb-12">

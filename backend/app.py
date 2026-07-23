@@ -31,12 +31,35 @@ def _json_safe(value):
 # Load once when server starts
 artifacts = load_artifacts()
 
+# Build the reference-cohort table once (background dots for the map),
+# same merge logic the old Streamlit app used.
+_ref_coords = artifacts.display_coords.copy()
+_meta_side = artifacts.projector.ref_meta.reset_index()
+_overlap = (set(_ref_coords.columns) & set(_meta_side.columns)) - {"sampleName"}
+_meta_side = _meta_side.drop(columns=[c for c in _overlap if c in _meta_side.columns], errors="ignore")
+_REFERENCE_MAP_DF = _ref_coords.merge(_meta_side, on="sampleName", how="left")
+
 
 @app.route("/")
 def home():
     return {
         "status": "OncoMap API running"
     }
+
+
+@app.route("/reference-map", methods=["GET"])
+def reference_map():
+    cols = ["sampleName", "VST_UMAP1_2D", "VST_UMAP2_2D"]
+    for field, col in artifacts.color_fields.items():
+        if col and col in _REFERENCE_MAP_DF.columns and col not in cols:
+            cols.append(col)
+
+    df = _REFERENCE_MAP_DF[cols]
+
+    return jsonify(_json_safe({
+        "points": df.to_dict(orient="records"),
+        "color_fields": artifacts.color_fields,
+    }))
 
 
 @app.route("/predict", methods=["POST"])
