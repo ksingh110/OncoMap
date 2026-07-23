@@ -10,7 +10,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 export const metadata: Metadata = {
   metadataBase: new URL("https://oncomap.us"),
 
-  title: "OncoMap | Hyper-Personalized Cancer Care",
+  title: "OncoMap",
   description:
     "Translating Tumor Transcriptomics into Hyper-Personalized Cancer Care.",
 

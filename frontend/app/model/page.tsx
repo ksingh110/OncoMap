@@ -25,9 +25,7 @@ import Image from "next/image"
 import ReferenceMap from "./ReferenceMap"
 
 const TEST_SAMPLES = [
-  { name: "High Response Sample", file: "/samples/high_response_sample.csv" },
-  { name: "Medium Response Sample", file: "/samples/medium_response_sample.csv" },
-  { name: "Low Response Sample", file: "/samples/low_response_sample.csv" },
+  { name: "Demo Sample", file: "/samples/demo_patient_expression.csv" }
 ]
 
 type Insights = {
