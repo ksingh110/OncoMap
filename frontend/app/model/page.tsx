@@ -11,7 +11,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Upload, CheckCircle2, AlertCircle, XCircle, FlaskConical, FileText } from "lucide-react"
+import {
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  FlaskConical,
+  FileText,
+  Settings2,
+  ChevronDown,
+} from "lucide-react"
 import Image from "next/image"
 
 const TEST_SAMPLES = [
@@ -19,13 +28,28 @@ const TEST_SAMPLES = [
   { name: "Medium Response Sample", file: "/samples/medium_response_sample.csv" },
   { name: "Low Response Sample", file: "/samples/low_response_sample.csv" },
 ]
+
+type Insights = {
+  local_dataset?: string
+  [key: string]: unknown
+}
+
 export default function ModelPage() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<number | null>(null)
   const [level, setLevel] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [insights, setInsights] = useState<Insights | null>(null)
   const [showResultDialog, setShowResultDialog] = useState(false)
+
+  // Optional clinical fields (mirrors the old "Optional clinical fields
+  // for responder model" panel) — collapsed by default.
+  const [showClinicalFields, setShowClinicalFields] = useState(false)
+  const [ageMissing, setAgeMissing] = useState(false)
+  const [age, setAge] = useState(60)
+  const [gender, setGender] = useState<"missing" | "male" | "female">("missing")
+  const [hpvStatus, setHpvStatus] = useState<"missing" | "positive" | "negative">("missing")
 
   const handleFile = async (selectedFile: File) => {
     setFile(selectedFile)
@@ -34,9 +58,13 @@ export default function ModelPage() {
 
     const formData = new FormData()
     formData.append("file", selectedFile)
+    formData.append("age_missing", String(ageMissing))
+    formData.append("age", String(age))
+    formData.append("gender", gender)
+    formData.append("hpv_status", hpvStatus)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/predict`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/analyze`, {
         method: "POST",
         body: formData,
       })
@@ -54,7 +82,7 @@ export default function ModelPage() {
         return
       }
 
-      const percentage = data.probability * 100
+      const percentage = data.response_probability * 100
       if (percentage <= 33) {
         setLevel("Low")
         setMessage("Using a novel machine learning framework, we predict a low probability of immunotherapy success. Consider alternative treatments or further determine whether immunotherapy will be effective for you. Based on this, you seem to be a non-responder to PD-1 immunotherapy.")
@@ -66,6 +94,7 @@ export default function ModelPage() {
         setMessage("Using a novel machine learning framework, we predict a high probability of immunotherapy success. Immunotherapy may be a promising treatment option to consider. You may be a strong candidate for PD-1 immunotherapy, but it's important to discuss this with your healthcare provider to determine the best treatment plan based on your individual circumstances. Based on this, you seem to be a responder to PD-1 immunotherapy.")
       }
       setResult(percentage)
+      setInsights(data.insights ?? null)
       setLoading(false)
       setShowResultDialog(true)
     } catch (err) {
@@ -98,6 +127,7 @@ export default function ModelPage() {
     setLoading(false)
     setLevel(null)
     setMessage(null)
+    setInsights(null)
     setShowResultDialog(false)
   }
 
@@ -183,7 +213,83 @@ export default function ModelPage() {
           <div className="max-w-5xl mx-auto">
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Main Upload Area */}
-              <div className="flex-1">
+              <div className="flex-1 flex flex-col gap-4">
+                {/* Optional clinical fields panel */}
+                {!loading && result === null && (
+                  <div className="bg-white border border-cyan-200 rounded-2xl shadow-lg overflow-hidden">
+                    <button
+                      onClick={() => setShowClinicalFields((v) => !v)}
+                      className="w-full flex items-center justify-between px-6 py-4 hover:bg-cyan-50/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Settings2 className="w-4 h-4 text-cyan-600" />
+                        <span className="text-sm font-semibold text-gray-800">
+                          Optional clinical details
+                        </span>
+                        <span className="text-xs text-gray-400">(improves the prediction)</span>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-gray-500 transition-transform ${
+                          showClinicalFields ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {showClinicalFields && (
+                      <div className="px-6 pb-6 pt-1 border-t border-cyan-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Age</label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={120}
+                            step={1}
+                            value={age}
+                            disabled={ageMissing}
+                            onChange={(e) => setAge(Number(e.target.value))}
+                            className="w-full rounded-lg border border-cyan-200 px-3 py-2 text-sm text-gray-800 disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                          />
+                          <label className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                            <input
+                              type="checkbox"
+                              checked={ageMissing}
+                              onChange={(e) => setAgeMissing(e.target.checked)}
+                              className="rounded border-cyan-300 text-cyan-600 focus:ring-cyan-400"
+                            />
+                            Age missing
+                          </label>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Gender</label>
+                          <select
+                            value={gender}
+                            onChange={(e) => setGender(e.target.value as typeof gender)}
+                            className="w-full rounded-lg border border-cyan-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                          >
+                            <option value="missing">Missing</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">HPV status</label>
+                          <select
+                            value={hpvStatus}
+                            onChange={(e) => setHpvStatus(e.target.value as typeof hpvStatus)}
+                            className="w-full rounded-lg border border-cyan-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                          >
+                            <option value="missing">Missing</option>
+                            <option value="positive">Positive</option>
+                            <option value="negative">Negative</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="bg-white border border-cyan-200 rounded-2xl p-8 shadow-lg h-full">
                   {!loading && result === null && (
                     <div
@@ -284,7 +390,6 @@ export default function ModelPage() {
                           <FileText className="w-4 h-4 text-cyan-600 mt-0.5 group-hover:text-cyan-700" />
                           <div>
                             <p className="text-sm font-medium text-gray-800 group-hover:text-cyan-700">{sample.name}</p>
-                            <p className="text-xs text-gray-500">{sample.description}</p>
                           </div>
                         </div>
                       </button>
@@ -369,6 +474,13 @@ export default function ModelPage() {
                 <span>100%</span>
               </div>
             </div>
+
+            {/* Reference dataset (from insights, if the backend provides it) */}
+            {insights?.local_dataset && (
+              <div className="text-center text-xs text-gray-400">
+                Nearest reference cohort: <span className="text-gray-600 font-medium">{insights.local_dataset}</span>
+              </div>
+            )}
 
             {/* Advice Section */}
             {message && (
