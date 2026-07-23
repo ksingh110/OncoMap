@@ -22,8 +22,8 @@ def home():
     }
 
 
-@app.route("/analyze", methods=["POST"])
-def analyze():
+@app.route("/predict", methods=["POST"])
+def predict():
 
     if "file" not in request.files:
         return jsonify({
@@ -32,8 +32,7 @@ def analyze():
 
     file = request.files["file"]
 
-    # Optional clinical fields (mirrors the old Streamlit expander:
-    # age / age-missing / gender / hpv_status)
+
     age_missing = request.form.get("age_missing", "false").lower() == "true"
     age = None if age_missing else float(request.form.get("age", 60))
     gender = request.form.get("gender", "missing")

@@ -64,7 +64,7 @@ export default function ModelPage() {
     formData.append("hpv_status", hpvStatus)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/analyze`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/predict`, {
         method: "POST",
         body: formData,
       })
