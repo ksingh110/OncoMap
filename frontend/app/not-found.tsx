@@ -12,11 +12,10 @@ export default function NotFound() {
     <main className={styles.page}>
       <Link href="/" className={styles.brand} aria-label="OncoMap home">
         <img
-          src="android-chrome-192x192.png"
+          src="/images/upscalemedia-transformed.png"
           alt=""
           className={styles.brandMark}
         />
-        OncoMap
       </Link>
       <section className={styles.card} aria-labelledby="not-found-title">
         <h1 className={styles.srOnly} id="not-found-title">404 — Page not found</h1>
