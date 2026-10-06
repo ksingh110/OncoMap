@@ -9,7 +9,7 @@
   background: radial-gradient(ellipse at 25% 20%, #dcf5f6 0, transparent 52%), radial-gradient(ellipse at 85% 80%, #dff5ed 0, transparent 48%), #f6fbfc;
 }
 .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 19px; font-weight: 700; letter-spacing: -.7px; text-decoration: none; }
-.brandMark { font-size: 28px; color: #0891b2; }
+.brandMark { display: block; width: 100px; height: 100px; object-fit: contain; border-radius: 50%; }
 .card { width: min(100%, 560px); text-align: center; }
 .scene { width: 100%; position: relative; margin-top: 22px; }
 .art { display: block; width: 100%; height: auto; overflow: visible; }
