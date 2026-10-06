@@ -11,7 +11,12 @@ export default function NotFound() {
   return (
     <main className={styles.page}>
       <Link href="/" className={styles.brand} aria-label="OncoMap home">
-        <span className={styles.brandMark} aria-hidden="true">✳</span> OncoMap
+        <img
+          src="frontend/public/android-chrome-192x192.png"
+          alt=""
+          className={styles.brandMark}
+        />
+        OncoMap
       </Link>
       <section className={styles.card} aria-labelledby="not-found-title">
         <h1 className={styles.srOnly} id="not-found-title">404 — Page not found</h1>
@@ -52,7 +57,6 @@ export default function NotFound() {
             <use href="#dna-404-helix" x="240" y="118" className={styles.staticDna} />
           </svg>
           <div className={styles.copy}>
-            <p className={styles.eyebrow}>A little out of sequence</p>
             <h2>This page is off the map.</h2>
             <p>The link may have moved. Let’s get you back home.</p>
           </div>
@@ -60,7 +64,6 @@ export default function NotFound() {
             Go back to home <span aria-hidden="true">↗</span>
           </Link>
         </div>
-        <p className={styles.footnote}>Finding a clearer path, one sequence at a time.</p>
       </section>
     </main>
   )
