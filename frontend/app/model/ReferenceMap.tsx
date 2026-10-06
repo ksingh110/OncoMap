@@ -251,14 +251,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
       {error && <p className="text-sm text-rose-600 py-12 text-center">{error}</p>}
 
       {!loading && !error && (
-        <div className="mb-2 space-y-2">
-          <p className="text-xs text-gray-500">Click a point or choose a sample to view its details.</p>
-          <select aria-label="Inspect sample" value={selected ?? ""} onChange={(event) => setSelected(event.target.value || null)} className="w-full rounded-lg border border-cyan-200 px-3 py-2 text-sm text-gray-800">
-            <option value="">Choose a sample…</option>
-            {patient && <option value="__uploaded_patient__">Uploaded patient</option>}
-            {data?.points.map((point) => <option key={point.sampleName} value={point.sampleName}>{point.sampleName}</option>)}
-          </select>
-        </div>
+        <p className="text-xs text-gray-500 mb-2">Click a point to view its sample details.</p>
       )}
       {!loading && !error && (
         <Plot

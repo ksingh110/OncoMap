@@ -184,7 +184,7 @@ test("landscape point clicks reveal the matching sample metadata", async ({ page
     await details.getByRole("button", { name: "Close details" }).click()
     await expect(details).not.toBeVisible()
   }
-  await page.getByRole("combobox", { name: "Inspect sample" }).selectOption("__uploaded_patient__")
+  await dialog.locator(".scatterlayer .trace .points .point").last().click({ force: true })
   await expect(page.getByRole("region", { name: "Selected sample details" }).getByText("Uploaded patient", { exact: true })).toBeVisible()
   expect(await page.evaluate(() => ({ local: Object.keys(localStorage), session: Object.keys(sessionStorage) }))).toEqual({ local: [], session: [] })
 })
