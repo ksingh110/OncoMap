@@ -16,5 +16,8 @@
   "private": true,
   "workspaces": [
     "frontend"
-  ]
+  ],
+  "dependencies": {
+    "next": "16.3.8"
+  }
 }
