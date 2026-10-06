@@ -126,3 +126,39 @@ test("mobile results remain within screen margins", async ({ page }) => {
   await expect(dialog.getByRole("button", { name: "Minimize results" })).toBeVisible()
   await expect(dialog.getByRole("button", { name: "Download results (JSON)", exact: true })).toBeVisible()
 })
+
+for (const width of [375, 1280]) {
+  test(`numeric landscape scales stay separate from the legend at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await page.route("**/reference-map", (route) => route.fulfill({ json: {
+      points: [
+        { sampleName: "A", VST_UMAP1_2D: 0, VST_UMAP2_2D: 0, age: 20, hpv_score: 0 },
+        { sampleName: "B", VST_UMAP1_2D: 2, VST_UMAP2_2D: 2, age: 90, hpv_score: 1 },
+        { sampleName: "C", VST_UMAP1_2D: 3, VST_UMAP2_2D: 1, age: "missing", hpv_score: null },
+      ], color_fields: {},
+    } }))
+    await page.route("**/predict", (route) => route.fulfill({ json: {
+      ...result, summary: { ...result.summary, projected_age: 55, projected_hpv_score: 0.5 },
+    } }))
+    await page.goto("/model")
+    await page.locator("#fileInput").setInputFiles(input)
+    for (const mode of ["Age", "HPV status"]) {
+      await page.getByRole("combobox", { name: "Color landscape by" }).selectOption(mode)
+      const graph = page.getByRole("dialog").locator(".js-plotly-plot")
+      await expect.poll(() => graph.evaluate((element) => {
+        const bar = element.querySelector(".colorbar")?.getBoundingClientRect()
+        const legend = element.querySelector(".legend")?.getBoundingClientRect()
+        return !!bar && !!legend && bar.bottom <= legend.top
+      })).toBe(true)
+      const axes = await graph.evaluate((element) => {
+        const plot = element as HTMLElement & { data: Array<{ name: string; marker: { coloraxis?: string } }>; _fullLayout: { coloraxis: { cmin: number; cmax: number } } }
+        return { patient: plot.data.find((trace) => trace.name === "Uploaded patient")?.marker.coloraxis,
+          reference: plot.data.find((trace) => trace.name === "Age" || trace.name === "HPV status")?.marker.coloraxis,
+          min: plot._fullLayout.coloraxis.cmin, max: plot._fullLayout.coloraxis.cmax }
+      })
+      expect(axes.patient).toBe(axes.reference)
+      expect(axes.patient).toBeTruthy()
+      expect([axes.min, axes.max]).toEqual(mode === "Age" ? [20, 90] : [0, 1])
+    }
+  })
+}
