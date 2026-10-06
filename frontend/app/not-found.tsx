@@ -12,7 +12,7 @@ export default function NotFound() {
     <main className={styles.page}>
       <Link href="/" className={styles.brand} aria-label="OncoMap home">
         <img
-          src="frontend/public/android-chrome-192x192.png"
+          src="/Users/krishaysingh/Documents/OncoMap/frontend//public/android-chrome-512x512.png/public/android-chrome-512x512.png/android-chrome-192x192.png"
           alt=""
           className={styles.brandMark}
         />
@@ -58,7 +58,6 @@ export default function NotFound() {
           </svg>
           <div className={styles.copy}>
             <h2>This page is off the map.</h2>
-            <p>The link may have moved. Let’s get you back home.</p>
           </div>
           <Link href="/" className={styles.homeButton}>
             Go back to home <span aria-hidden="true">↗</span>
