@@ -121,6 +121,40 @@ def load_artifacts(
     )
 
 
+
+REFERENCE_METADATA_FIELDS = (
+    "dataset", "gender", "HPV_status", "projected_HPV_status",
+    "age_at_diagnosis", "age", "hpv_status_color", "hpv_score",
+)
+
+
+def neighbor_details(art: AppArtifacts, neighbors: pd.DataFrame) -> list[dict]:
+    """Return reference embeddings and approved metadata; never raw expression."""
+    coords = art.display_coords.set_index("sampleName")
+    details = []
+    for neighbor in neighbors.sort_values("neighbor_rank").to_dict(orient="records"):
+        sample_id = neighbor["neighbor_sample"]
+        metadata = {}
+        if sample_id in art.projector.ref_meta.index:
+            row = art.projector.ref_meta.loc[sample_id]
+            metadata = {field: None if pd.isna(row[field]) else row[field]
+                        for field in REFERENCE_METADATA_FIELDS if field in row.index}
+        embedding = None
+        if sample_id in coords.index:
+            row = coords.loc[sample_id]
+            embedding = {"umap1": row["VST_UMAP1_2D"], "umap2": row["VST_UMAP2_2D"]}
+            if "dataset" in row.index:
+                metadata.setdefault("dataset", row["dataset"])
+        details.append({
+            "sample_id": sample_id,
+            "rank": neighbor["neighbor_rank"],
+            "distance": neighbor["distance"],
+            "weight": neighbor["weight"],
+            "embedding": embedding,
+            "metadata": metadata,
+        })
+    return details
+
 def run_projection_and_prediction(
     art: AppArtifacts,
     uploaded_expr: pd.DataFrame,
@@ -182,7 +216,7 @@ def run_projection_and_prediction(
 
     return {
         "summary": srow,
-        "neighbors": n_top,
+        "neighbors": neighbor_details(art, n_top),
         "response_probability": prob,
         "insights": {
             "local_dataset": top_dataset,

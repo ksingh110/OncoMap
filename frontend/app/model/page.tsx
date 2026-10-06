@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { apiUrl } from "@/lib/api"
+import { resultExport, type AnalysisResult } from "@/lib/results"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +22,9 @@ import {
   FileText,
   Settings2,
   ChevronDown,
+  Download,
+  Minimize2,
+  Maximize2,
 } from "lucide-react"
 import Image from "next/image"
 import ReferenceMap from "./ReferenceMap"
@@ -45,6 +49,7 @@ export default function ModelPage() {
   const activeRequest = useRef<AbortController | null>(null)
   const fileInput = useRef<HTMLInputElement | null>(null)
   const [loading, setLoading] = useState(false)
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [result, setResult] = useState<number | null>(null)
   const [level, setLevel] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -64,6 +69,7 @@ export default function ModelPage() {
     activeRequest.current?.abort()
     activeRequest.current = null
     if (fileInput.current) fileInput.current.value = ""
+    setAnalysis(null)
     setResult(null)
     setLoading(false)
     setLevel(null)
@@ -102,6 +108,7 @@ export default function ModelPage() {
     setMessage(null)
     setShowResultDialog(false)
     setLoading(true)
+    setAnalysis(null)
     setResult(null)
 
     const formData = new FormData()
@@ -126,7 +133,7 @@ export default function ModelPage() {
         throw new Error("Server error")
       }
 
-      const data = await response.json()
+      const data: AnalysisResult = await response.json()
 
       if (controller.signal.aborted || activeRequest.current !== controller) return
       if (typeof data.response_probability !== "number" || !Number.isFinite(data.response_probability) ||
@@ -145,6 +152,7 @@ export default function ModelPage() {
         setLevel("High")
         setMessage("Using a novel machine learning framework, we predict a high probability of immunotherapy success. Immunotherapy may be a promising treatment option to consider. You may be a strong candidate for PD-1 immunotherapy, but it's important to discuss this with your healthcare provider to determine the best treatment plan based on your individual circumstances. Based on this, you seem to be a responder to PD-1 immunotherapy.")
       }
+      setAnalysis({ ...data, neighbors: data.neighbors ?? [] })
       setResult(percentage)
       setInsights(data.insights ?? null)
       if (data.summary?.projected_umap1 != null && data.summary?.projected_umap2 != null) {
@@ -176,6 +184,7 @@ export default function ModelPage() {
     const controller = new AbortController()
     activeRequest.current = controller
     setLoading(true)
+    setAnalysis(null)
     setResult(null)
     try {
       const response = await fetch(sampleFile, { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: controller.signal })
@@ -192,6 +201,19 @@ export default function ModelPage() {
         setLoading(false)
       }
     }
+  }
+
+  const downloadResults = () => {
+    if (!analysis) return
+    const blob = new Blob([JSON.stringify(resultExport(analysis, level, message), null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "oncomap-results.json"
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000)
   }
 
   const getLevelConfig = (level: string | null) => {
@@ -387,7 +409,7 @@ export default function ModelPage() {
 
                   <p className="mt-4 text-xs text-gray-500">
                     Your file is sent over HTTPS to our analysis server for processing in memory.
-                    OncoMap does not save uploaded files or results. Results stay in this page until you clear or leave it.
+                    OncoMap does not save uploaded files or results on the server. Results stay in this page until you clear or leave it, unless you download a copy.
                     Use de-identified data; do not include names or patient identifiers.
                   </p>
 
@@ -410,7 +432,10 @@ export default function ModelPage() {
                           onClick={() => setShowResultDialog(true)}
                           className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white px-6"
                         >
-                          View Results
+                          <Maximize2 className="h-4 w-4 mr-2" /> Restore Results
+                        </Button>
+                        <Button onClick={downloadResults} variant="outline" className="border-cyan-300 text-cyan-700">
+                          <Download className="h-4 w-4 mr-2" /> Download JSON
                         </Button>
                         <Button
                           onClick={resetUpload}
@@ -471,15 +496,6 @@ export default function ModelPage() {
           </div>
         </section>
 
-        {/* Reference Landscape Map */}
-        {patientPoint && (
-          <section className="container mx-auto px-4 mb-12">
-            <div className="max-w-5xl mx-auto">
-              <ReferenceMap patient={patientPoint} />
-            </div>
-          </section>
-        )}
-
         {/* About Section - Compact */}
         <section className="container mx-auto px-4 mb-12">
           <div className="max-w-5xl mx-auto">
@@ -508,17 +524,25 @@ export default function ModelPage() {
 
       {/* Results Dialog */}
       <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
-        <DialogContent className="sm:max-w-xl bg-white border-0 shadow-2xl">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="text-2xl font-bold text-center text-gray-800">
+        <DialogContent showCloseButton={false} className="flex flex-col w-[calc(100vw-2rem)] max-w-none sm:max-w-none h-[calc(100dvh-2rem)] sm:h-[calc(100dvh-4rem)] sm:w-[calc(100vw-4rem)] bg-white border-0 shadow-2xl rounded-2xl p-0 gap-0 overflow-hidden">
+          <div className="flex items-start justify-between gap-4 border-b border-cyan-100 px-5 py-5 sm:px-8">
+          <DialogHeader className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-widest text-cyan-700">Your analysis</p>
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-left text-gray-800">
               Immunotherapy Analysis Results
             </DialogTitle>
-            <DialogDescription className="text-center text-gray-500">
+            <DialogDescription className="text-left text-gray-500">
               Prediction based on uploaded transcriptomic data
             </DialogDescription>
           </DialogHeader>
+          <Button onClick={() => setShowResultDialog(false)} variant="outline" size="icon" aria-label="Minimize results" title="Minimize results" className="shrink-0 border-cyan-200 text-cyan-700">
+            <Minimize2 className="h-4 w-4" />
+          </Button>
+          </div>
 
-          <div className="py-6 space-y-6">
+          <div className="flex-1 min-h-0 overflow-y-auto bg-gradient-to-br from-cyan-50/40 to-teal-50/40 p-5 sm:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.6fr)] gap-6 items-start">
+          <div className="bg-white rounded-2xl border border-cyan-100 p-5 sm:p-6 space-y-6">
             {/* Classification Badge */}
             <div className="flex flex-col items-center gap-4">
               <div className={`p-4 rounded-full ${levelConfig.bgColor} ${levelConfig.borderColor} border-2`}>
@@ -570,7 +594,36 @@ export default function ModelPage() {
             )}
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+          <div className="min-w-0 space-y-5">
+            {patientPoint ? <ReferenceMap patient={patientPoint} compact /> : (
+              <div className="rounded-2xl border border-cyan-100 bg-white p-6 text-sm text-gray-500">Landscape coordinates are unavailable for this analysis.</div>
+            )}
+            <div className="bg-white rounded-2xl border border-cyan-100 overflow-hidden">
+              <div className="px-5 py-4 border-b border-cyan-100 flex items-center justify-between gap-3">
+                <h3 className="font-semibold text-gray-800">Nearest reference samples</h3>
+                <span className="text-xs text-cyan-700">{analysis?.neighbors.length ?? 0} samples</span>
+              </div>
+              <div className="overflow-x-auto max-h-52 overflow-y-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-gray-500 bg-cyan-50/50"><tr><th className="px-5 py-3">Rank</th><th className="px-5 py-3">Sample</th><th className="px-5 py-3">Dataset</th><th className="px-5 py-3">Distance</th></tr></thead>
+                  <tbody>{analysis?.neighbors.map((neighbor) => (
+                    <tr key={neighbor.rank} className="border-t border-cyan-50">
+                      <td className="px-5 py-3 text-cyan-700">{neighbor.rank}</td>
+                      <td className="px-5 py-3 font-medium text-gray-700">{neighbor.sample_id}</td>
+                      <td className="px-5 py-3 text-gray-500">{neighbor.metadata.dataset ?? "—"}</td>
+                      <td className="px-5 py-3 tabular-nums text-gray-500">{neighbor.distance.toFixed(3)}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+                {!analysis?.neighbors.length && <p className="px-5 py-4 text-sm text-gray-500">No neighbor details available.</p>}
+              </div>
+            </div>
+          </div>
+          </div>
+          </div>
+
+          <DialogFooter className="border-t border-cyan-100 px-5 py-4 sm:px-8 flex-col sm:flex-row sm:items-center gap-3 bg-white">
+            <p className="text-xs text-gray-500 sm:mr-auto">Kept in this page only. Downloading saves a copy to your device.</p>
             <Button
               onClick={resetUpload}
               variant="outline"
@@ -579,10 +632,10 @@ export default function ModelPage() {
               Upload Another File
             </Button>
             <Button
-              onClick={() => setShowResultDialog(false)}
+              onClick={downloadResults}
               className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white"
             >
-              Close
+              <Download className="h-4 w-4 mr-2" /> Download results (JSON)
             </Button>
           </DialogFooter>
         </DialogContent>

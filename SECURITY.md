@@ -17,7 +17,13 @@ and their references are released after the response is built. Uploaded filename
 are replaced in the browser and sample headers are replaced in the parser.
 
 The browser keeps results only in page memory until reset, navigation, or page
-exit. The file input is cleared immediately and the file is not retained in React
+exit. An explicit Download results action creates a JSON copy on the user's device
+using a browser Blob; it does not save anything on the server or re-run inference.
+The export includes projected UMAP coordinates, prediction probability/percentage,
+interpretation, neighborhood insights, and nearest reference sample IDs, distances,
+weights, embeddings, and approved reference metadata. It excludes raw uploaded
+expression and filenames. Downloaded copies remain under the user's control; clearing
+the page cannot delete a downloaded file. Minimizing preserves in-page results. The file input is cleared immediately and the file is not retained in React
 state. Requests omit cookies/referrers, reject redirects, and use `no-store`.
 Legacy OncoMap offline caches are retired and analytics is removed. Uploads are
 limited to 4 MiB / 60,000 unique genes, one sample, CSV or TSV. Clinical fields are

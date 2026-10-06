@@ -26,7 +26,7 @@ def mock_prediction(monkeypatch):
     def predict(artifacts, expr, **kwargs):
         calls.append((expr.columns.tolist(), kwargs))
         return {"response_probability": 0.5, "summary": {"query_sample": expr.columns[0]},
-                "insights": {}, "neighbors": None}
+                "insights": {}, "neighbors": []}
     monkeypatch.setattr(api, "run_projection_and_prediction", predict)
     return calls
 
@@ -52,7 +52,7 @@ def test_large_upload_never_uses_temporary_files(client, monkeypatch, mock_predi
     assert response.status_code == 200
     assert mock_prediction[0][0] == ["uploaded_sample"]
     assert b"patient-secret" not in response.data
-    assert "neighbors" not in response.json
+    assert response.json["neighbors"] == []
     assert closed and all(closed)
 
 
@@ -125,7 +125,7 @@ def test_concurrent_prediction_rejected_without_parsing(monkeypatch):
     def slow(*args, **kwargs):
         started.set()
         assert release.wait(10)
-        return {"response_probability": 0.5, "summary": {}, "insights": {}}
+        return {"response_probability": 0.5, "summary": {}, "insights": {}, "neighbors": []}
     monkeypatch.setattr(api, "run_projection_and_prediction", slow)
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(lambda: upload(api.app.test_client()))
@@ -172,3 +172,24 @@ def test_gene_count_is_bounded(monkeypatch):
     monkeypatch.setattr(services, "MAX_GENE_ROWS", 2)
     with pytest.raises(ValueError):
         parse_uploaded_expression(b"gene,x\nA,1\nB,2\nC,3\n", "x.csv")
+
+
+def test_neighbor_export_includes_reference_embeddings_and_approved_metadata():
+    from types import SimpleNamespace
+    import pandas as pd
+    from services import neighbor_details
+    art = SimpleNamespace(
+        display_coords=pd.DataFrame([{"sampleName": "reference-A", "VST_UMAP1_2D": 1.2,
+                                      "VST_UMAP2_2D": 3.4, "dataset": "cohort"}]),
+        projector=SimpleNamespace(ref_meta=pd.DataFrame([
+            {"sampleName": "reference-A", "age": 55, "gender": "female", "patient_name": "never-export"}
+        ]).set_index("sampleName")),
+    )
+    neighbors = pd.DataFrame([{"neighbor_sample": "reference-A", "neighbor_rank": 1,
+                               "distance": 0.5, "weight": 1.0}])
+    row = neighbor_details(art, neighbors)[0]
+    assert row["embedding"] == {"umap1": 1.2, "umap2": 3.4}
+    assert row["metadata"] == {"age": 55, "gender": "female", "dataset": "cohort"}
+    assert row["sample_id"] == "reference-A"
+    assert row["rank"] == 1
+    assert "patient_name" not in row["metadata"]

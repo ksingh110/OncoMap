@@ -1,6 +1,12 @@
 import { expect, test } from "@playwright/test"
 
-const result = { response_probability: 0.5, summary: { projected_umap1: 1, projected_umap2: 2 }, insights: {} }
+const result = {
+  response_probability: 0.5,
+  summary: { projected_umap1: 1, projected_umap2: 2 },
+  insights: { local_dataset: "synthetic-cohort" },
+  neighbors: [{ sample_id: "reference-A", rank: 1, distance: 0.5, weight: 1,
+    embedding: { umap1: 3, umap2: 4 }, metadata: { dataset: "synthetic-cohort", age: 55, gender: "female" } }],
+}
 const input = { name: "patient-identifier.csv", mimeType: "text/csv", buffer: Buffer.from("gene,patient-identifier\nTP53,1\n") }
 
 test.beforeEach(async ({ page }) => {
@@ -61,4 +67,62 @@ test("old OncoMap caches are removed", async ({ page }) => {
   })
   await page.reload()
   await expect.poll(() => page.evaluate(() => caches.keys())).toEqual([])
+})
+
+
+test("large results dialog minimizes, restores and exports complete JSON locally", async ({ page }) => {
+  let predictions = 0
+  await page.route("**/predict", async (route) => { predictions++; await route.fulfill({ json: result }) })
+  await page.goto("/model")
+  await page.locator("#fileInput").setInputFiles(input)
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole("heading", { name: "Reference tumor landscape" })).toBeVisible()
+  await expect(dialog.getByText("reference-A", { exact: true })).toBeVisible()
+  const bounds = await dialog.boundingBox()
+  const viewport = page.viewportSize()!
+  await expect.poll(async () => (await dialog.boundingBox())!.width).toBeGreaterThan(viewport.width * 0.9)
+  await expect.poll(async () => (await dialog.boundingBox())!.height).toBeGreaterThan(viewport.height * 0.9)
+  expect(bounds!.x).toBeGreaterThan(0)
+  expect(bounds!.y).toBeGreaterThan(0)
+  await page.getByRole("button", { name: "Minimize results" }).click()
+  await expect(dialog).not.toBeVisible()
+  await page.getByRole("button", { name: "Restore Results" }).click()
+  await expect(dialog).toBeVisible()
+  const downloadPromise = page.waitForEvent("download")
+  await page.getByRole("button", { name: "Download results (JSON)", exact: true }).click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toBe("oncomap-results.json")
+  const { readFile } = await import("node:fs/promises")
+  const exported = JSON.parse(await readFile((await download.path())!, "utf-8"))
+  expect(exported.embedding.umap1).toBe(1)
+  expect(exported.embedding.umap2).toBe(2)
+  expect(exported.prediction.response_probability).toBe(0.5)
+  expect(exported.prediction.percentage).toBe(50)
+  expect(exported.prediction.probability_level).toBe("Medium")
+  expect(exported.nearest_samples).toEqual(result.neighbors)
+  expect(exported.projection_summary).toEqual(result.summary)
+  expect(exported.neighborhood_insights).toEqual(result.insights)
+  expect(JSON.stringify(exported)).not.toContain("patient-identifier")
+  expect(predictions).toBe(1)
+  expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([])
+  await page.getByRole("button", { name: "Upload Another File" }).click()
+  await expect(dialog).not.toBeVisible()
+  await expect(page.getByRole("button", { name: "Restore Results" })).not.toBeVisible()
+})
+
+test("mobile results remain within screen margins", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.route("**/predict", async (route) => route.fulfill({ json: result }))
+  await page.goto("/model")
+  await page.locator("#fileInput").setInputFiles(input)
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toBeVisible()
+  const bounds = await dialog.boundingBox()
+  expect(bounds!.x).toBeGreaterThan(0)
+  expect(bounds!.y).toBeGreaterThan(0)
+  expect(bounds!.x + bounds!.width).toBeLessThan(375)
+  expect(bounds!.y + bounds!.height).toBeLessThan(812)
+  await expect(dialog.getByRole("button", { name: "Minimize results" })).toBeVisible()
+  await expect(dialog.getByRole("button", { name: "Download results (JSON)", exact: true })).toBeVisible()
 })
