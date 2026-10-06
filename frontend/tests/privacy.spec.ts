@@ -162,3 +162,29 @@ for (const width of [375, 1280]) {
     }
   })
 }
+
+test("landscape point clicks reveal the matching sample metadata", async ({ page }) => {
+  await page.route("**/reference-map", (route) => route.fulfill({ json: {
+    points: [{ sampleName: "reference-click", VST_UMAP1_2D: 0, VST_UMAP2_2D: 0,
+      dataset: "Test cohort", gender: "female", age: null, hpv_score: 0.7, HPV_status: "positive" }],
+    color_fields: {},
+  } }))
+  await page.route("**/predict", (route) => route.fulfill({ json: result }))
+  await page.goto("/model")
+  await page.locator("#fileInput").setInputFiles(input)
+  const dialog = page.getByRole("dialog")
+  for (const mode of ["Dataset", "Age", "HPV status"]) {
+    await page.getByRole("combobox", { name: "Color landscape by" }).selectOption(mode)
+    await dialog.locator(".scatterlayer .trace .points .point").first().click({ force: true })
+    const details = page.getByRole("region", { name: "Selected sample details" })
+    await expect(details.getByText("reference-click", { exact: true })).toBeVisible()
+    await expect(details.getByText("Test cohort", { exact: true })).toBeVisible()
+    await expect(details.getByText("positive", { exact: true })).toBeVisible()
+    await expect(details.getByText("Not available", { exact: true })).toBeVisible()
+    await details.getByRole("button", { name: "Close details" }).click()
+    await expect(details).not.toBeVisible()
+  }
+  await page.getByRole("combobox", { name: "Inspect sample" }).selectOption("__uploaded_patient__")
+  await expect(page.getByRole("region", { name: "Selected sample details" }).getByText("Uploaded patient", { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => ({ local: Object.keys(localStorage), session: Object.keys(sessionStorage) }))).toEqual({ local: [], session: [] })
+})

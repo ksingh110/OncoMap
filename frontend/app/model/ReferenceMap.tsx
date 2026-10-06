@@ -62,6 +62,7 @@ function isUnlabeled(v: unknown) {
 export default function ReferenceMap({ patient, compact = false }: { patient: PatientPoint | null; compact?: boolean }) {
   const [data, setData] = useState<ReferenceMapResponse | null>(null)
   const [colorMode, setColorMode] = useState<ColorMode>("Dataset")
+  const [selected, setSelected] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -112,6 +113,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
     if (!points.length || !field || !(field in (points[0] ?? {}))) {
       result.push({
         x: points.map(x),
+          customdata: points.map((p) => ["reference", p.sampleName]),
         y: points.map(y),
         mode: "markers",
         type: "scatter",
@@ -125,6 +127,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
       if (unlabeled.length) {
         result.push({
           x: unlabeled.map(x),
+          customdata: unlabeled.map((p) => ["reference", p.sampleName]),
           y: unlabeled.map(y),
           mode: "markers",
           type: "scatter",
@@ -136,6 +139,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
       if (labeled.length) {
         result.push({
           x: labeled.map(x),
+          customdata: labeled.map((p) => ["reference", p.sampleName]),
           y: labeled.map(y),
           mode: "markers",
           type: "scatter",
@@ -155,6 +159,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
       if (unlabeled.length) {
         result.push({
           x: unlabeled.map(x),
+          customdata: unlabeled.map((p) => ["reference", p.sampleName]),
           y: unlabeled.map(y),
           mode: "markers",
           type: "scatter",
@@ -168,6 +173,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
         const subset = labeled.filter((p) => String(p[field]).trim() === cat)
         result.push({
           x: subset.map(x),
+          customdata: subset.map((p) => ["reference", p.sampleName]),
           y: subset.map(y),
           mode: "markers",
           type: "scatter",
@@ -183,6 +189,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
     if (patient) {
       result.push({
         x: [patient.umap1],
+        customdata: [["patient", ""]],
         y: [patient.umap2],
         mode: "markers",
         type: "scatter",
@@ -194,6 +201,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
       const paintValue = colorMode === "Age" ? patient.age : colorMode === "HPV status" ? patient.hpvScore : null
       result.push({
         x: [patient.umap1],
+        customdata: [["patient", ""]],
         y: [patient.umap2],
         mode: "text+markers",
         type: "scatter",
@@ -209,6 +217,18 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
 
     return result
   }, [data, colorMode, patient])
+
+  const selectedPoint = data?.points.find((point) => point.sampleName === selected)
+  const selectedPatient = selected === "__uploaded_patient__" && patient
+  const details: Array<[string, unknown]> = selectedPatient
+    ? [["Age (years)", patient.age], ["HPV score", patient.hpvScore], ["UMAP 1", patient.umap1], ["UMAP 2", patient.umap2]]
+    : selectedPoint ? [
+      ["Dataset", selectedPoint.dataset], ["Gender", selectedPoint.gender],
+      ["Age (years)", selectedPoint.age ?? selectedPoint.age_at_diagnosis],
+      ["HPV status", selectedPoint.HPV_status ?? selectedPoint.projected_HPV_status],
+      ["HPV score", selectedPoint.hpv_score],
+      ["UMAP 1", selectedPoint.VST_UMAP1_2D], ["UMAP 2", selectedPoint.VST_UMAP2_2D],
+    ] : []
 
   return (
     <div className="bg-white border border-cyan-200 rounded-2xl p-6 shadow-lg">
@@ -231,8 +251,23 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
       {error && <p className="text-sm text-rose-600 py-12 text-center">{error}</p>}
 
       {!loading && !error && (
+        <div className="mb-2 space-y-2">
+          <p className="text-xs text-gray-500">Click a point or choose a sample to view its details.</p>
+          <select aria-label="Inspect sample" value={selected ?? ""} onChange={(event) => setSelected(event.target.value || null)} className="w-full rounded-lg border border-cyan-200 px-3 py-2 text-sm text-gray-800">
+            <option value="">Choose a sample…</option>
+            {patient && <option value="__uploaded_patient__">Uploaded patient</option>}
+            {data?.points.map((point) => <option key={point.sampleName} value={point.sampleName}>{point.sampleName}</option>)}
+          </select>
+        </div>
+      )}
+      {!loading && !error && (
         <Plot
           data={traces}
+          onClick={(event) => {
+            const value = event.points[0]?.customdata
+            if (!Array.isArray(value)) return
+            setSelected(value[0] === "patient" ? "__uploaded_patient__" : String(value[1]))
+          }}
           layout={{
             autosize: true,
             margin: { l: 40, r: numericMode ? 75 : 20, t: 10, b: numericMode ? 95 : 40 },
@@ -261,6 +296,25 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
           useResizeHandler
           style={{ width: "100%", height: compact ? "clamp(300px, 48vh, 500px)" : 560 }}
         />
+      )}
+      {(selectedPoint || selectedPatient) && (
+        <section aria-label="Selected sample details" aria-live="polite" className="mt-4 rounded-xl border border-cyan-200 bg-cyan-50/50 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h4 className="font-semibold text-gray-800">Sample details</h4>
+              <p className="text-sm text-gray-600 break-all">{selectedPatient ? "Uploaded patient" : selectedPoint?.sampleName}</p>
+            </div>
+            <button type="button" onClick={() => setSelected(null)} className="text-sm text-cyan-800 underline">Close details</button>
+          </div>
+          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+            {details.map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-gray-500">{label}</dt>
+                <dd className="font-medium text-gray-800 break-words">{isUnlabeled(value) ? "Not available" : typeof value === "number" ? String(Number(value.toFixed(4))) : String(value)}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
       )}
     </div>
   )
