@@ -188,3 +188,16 @@ test("landscape point clicks reveal the matching sample metadata", async ({ page
   await expect(page.getByRole("region", { name: "Selected sample details" }).getByText("Uploaded patient", { exact: true })).toBeVisible()
   expect(await page.evaluate(() => ({ local: Object.keys(localStorage), session: Object.keys(sessionStorage) }))).toEqual({ local: [], session: [] })
 })
+
+test("ranked sample IDs open their metadata table", async ({ page }) => {
+  await page.route("**/predict", (route) => route.fulfill({ json: result }))
+  await page.goto("/model")
+  await page.locator("#fileInput").setInputFiles(input)
+  await page.getByRole("button", { name: "reference-A", exact: true }).click()
+  const metadata = page.getByRole("region", { name: "Ranked sample metadata" })
+  await expect(metadata.getByRole("row", { name: "age 55", exact: true })).toBeVisible()
+  await expect(metadata.getByRole("row", { name: "dataset synthetic-cohort", exact: true })).toBeVisible()
+  await metadata.getByRole("button", { name: "Close metadata" }).click()
+  await expect(metadata).not.toBeVisible()
+  await expect(page.getByRole("combobox", { name: "Inspect sample" })).toHaveCount(0)
+})
