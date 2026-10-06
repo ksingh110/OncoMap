@@ -1,9 +1,14 @@
 {
   "dependencies": {
-    "plotly.js": "^3.7.0",
+    "plotly.js": "4.1.2",
     "react-plotly.js": "^4.0.0"
   },
   "devDependencies": {
     "@types/plotly.js": "^3.0.10"
+  },
+  "overrides": {
+    "lodash": "^4.18.1",
+    "nanoid": "^3.3.18",
+    "source-map-js": "^1.2.2"
   }
 }

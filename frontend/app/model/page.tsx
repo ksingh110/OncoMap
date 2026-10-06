@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { apiUrl } from "@/lib/api"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
@@ -41,7 +42,8 @@ type PatientPoint = {
 }
 
 export default function ModelPage() {
-  const [file, setFile] = useState<File | null>(null)
+  const activeRequest = useRef<AbortController | null>(null)
+  const fileInput = useRef<HTMLInputElement | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<number | null>(null)
   const [level, setLevel] = useState<string | null>(null)
@@ -58,22 +60,66 @@ export default function ModelPage() {
   const [gender, setGender] = useState<"missing" | "male" | "female">("missing")
   const [hpvStatus, setHpvStatus] = useState<"missing" | "positive" | "negative">("missing")
 
+  const resetUpload = useCallback(() => {
+    activeRequest.current?.abort()
+    activeRequest.current = null
+    if (fileInput.current) fileInput.current.value = ""
+    setResult(null)
+    setLoading(false)
+    setLevel(null)
+    setMessage(null)
+    setInsights(null)
+    setPatientPoint(null)
+    setShowResultDialog(false)
+    setAge(60)
+    setAgeMissing(false)
+    setGender("missing")
+    setHpvStatus("missing")
+  }, [])
+
+  useEffect(() => {
+    resetUpload()
+    const clearOnLeave = () => resetUpload()
+    window.addEventListener("pagehide", clearOnLeave)
+    return () => {
+      resetUpload()
+      window.removeEventListener("pagehide", clearOnLeave)
+    }
+  }, [resetUpload])
+
   const handleFile = async (selectedFile: File) => {
-    setFile(selectedFile)
+    if (!/\.(csv|tsv)$/i.test(selectedFile.name) || selectedFile.size === 0 || selectedFile.size > 4 * 1024 * 1024) {
+      alert("Upload one CSV or TSV file, up to 4 MiB.")
+      return
+    }
+    activeRequest.current?.abort()
+    const controller = new AbortController()
+    activeRequest.current = controller
+    const timeout = window.setTimeout(() => controller.abort(), 90_000)
+    setPatientPoint(null)
+    setInsights(null)
+    setLevel(null)
+    setMessage(null)
+    setShowResultDialog(false)
     setLoading(true)
     setResult(null)
 
     const formData = new FormData()
-    formData.append("file", selectedFile)
+    formData.append("file", selectedFile, selectedFile.name.toLowerCase().endsWith(".tsv") ? "expression.tsv" : "expression.csv")
     formData.append("age_missing", String(ageMissing))
     formData.append("age", String(age))
     formData.append("gender", gender)
     formData.append("hpv_status", hpvStatus)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/predict`, {
+      const response = await fetch(apiUrl("/predict"), {
         method: "POST",
         body: formData,
+        cache: "no-store",
+        credentials: "omit",
+        referrerPolicy: "no-referrer",
+        redirect: "error",
+        signal: controller.signal,
       })
 
       if (!response.ok) {
@@ -82,11 +128,10 @@ export default function ModelPage() {
 
       const data = await response.json()
 
-      if (data.error) {
-        alert(data.error)
-        setLoading(false)
-        setFile(null)
-        return
+      if (controller.signal.aborted || activeRequest.current !== controller) return
+      if (typeof data.response_probability !== "number" || !Number.isFinite(data.response_probability) ||
+          data.response_probability < 0 || data.response_probability > 1) {
+        throw new Error("Invalid response")
       }
 
       const percentage = data.response_probability * 100
@@ -112,39 +157,41 @@ export default function ModelPage() {
       }
       setLoading(false)
       setShowResultDialog(true)
-    } catch (err) {
-      console.error("Prediction error:", err)
-      alert("Prediction failed")
-      setLoading(false)
-      setFile(null)
+    } catch {
+      if (activeRequest.current === controller) {
+        alert(controller.signal.aborted ? "Analysis cancelled or timed out. Please try again." : "Prediction failed. Check your input and try again.")
+      }
+    } finally {
+      window.clearTimeout(timeout)
+      formData.delete("file")
+      if (activeRequest.current === controller) {
+        activeRequest.current = null
+        setLoading(false)
+      }
     }
   }
 
   const handleTestSample = async (sampleFile: string) => {
+    activeRequest.current?.abort()
+    const controller = new AbortController()
+    activeRequest.current = controller
     setLoading(true)
     setResult(null)
-
     try {
-      const response = await fetch(`${sampleFile}`)
+      const response = await fetch(sampleFile, { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: controller.signal })
+      if (!response.ok) throw new Error("Unable to load sample")
       const blob = await response.blob()
-      const file = new File([blob], sampleFile, { type: "text/csv" })
-      handleFile(file)
-    } catch (err) {
-      console.error("Error loading test sample:", err)
-      alert("Failed to load test sample")
-      setLoading(false)
+      if (controller.signal.aborted || activeRequest.current !== controller) return
+      const file = new File([blob], "demo.csv", { type: "text/csv" })
+      await handleFile(file)
+    } catch {
+      if (!controller.signal.aborted) alert("Failed to load test sample")
+    } finally {
+      if (activeRequest.current === controller) {
+        activeRequest.current = null
+        setLoading(false)
+      }
     }
-  }
-
-  const resetUpload = () => {
-    setFile(null)
-    setResult(null)
-    setLoading(false)
-    setLevel(null)
-    setMessage(null)
-    setInsights(null)
-    setPatientPoint(null)
-    setShowResultDialog(false)
   }
 
   const getLevelConfig = (level: string | null) => {
@@ -334,9 +381,15 @@ export default function ModelPage() {
                       </div>
                       <p className="text-xl font-semibold mb-2 text-gray-800">Drop your file here</p>
                       <p className="text-gray-500 mb-4">or click to browse</p>
-                      <p className="text-sm text-gray-400">Supported: CSV, TXT, JSON</p>
+                      <p className="text-sm text-gray-400">Supported: CSV or TSV · one sample · up to 4 MiB</p>
                     </div>
                   )}
+
+                  <p className="mt-4 text-xs text-gray-500">
+                    Your file is sent over HTTPS to our analysis server for processing in memory.
+                    OncoMap does not save uploaded files or results. Results stay in this page until you clear or leave it.
+                    Use de-identified data; do not include names or patient identifiers.
+                  </p>
 
                   {loading && (
                     <div className="text-center py-20">
@@ -374,11 +427,12 @@ export default function ModelPage() {
                     type="file"
                     id="fileInput"
                     className="hidden"
-                    accept=".csv,.txt,.json"
+                    accept=".csv,.tsv"
+                    ref={fileInput}
                     onChange={(e) => {
-                      if (e.target.files && e.target.files.length > 0) {
-                        handleFile(e.target.files[0])
-                      }
+                      const selected = e.target.files?.[0]
+                      e.target.value = ""
+                      if (selected) handleFile(selected)
                     }}
                   />
                 </div>

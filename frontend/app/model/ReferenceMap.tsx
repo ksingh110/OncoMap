@@ -2,9 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
+import type { ScatterData } from "plotly.js"
+import { apiUrl } from "@/lib/api"
 
 // Plotly touches `window`, so it can only load on the client.
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false })
+const Plot = dynamic(async () => {
+  const [{ default: createPlotlyComponent }, { default: Plotly }] = await Promise.all([
+    import("react-plotly.js/factory"), import("plotly.js-basic-dist"),
+  ])
+  return createPlotlyComponent(Plotly)
+}, { ssr: false })
 
 type ColorMode = "Dataset" | "Gender" | "HPV status" | "Age"
 
@@ -55,7 +62,7 @@ export default function ReferenceMap({ patient }: { patient: PatientPoint | null
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/reference-map`)
+    fetch(apiUrl("/reference-map"), { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", redirect: "error" })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load reference map")
         return res.json()
@@ -64,7 +71,6 @@ export default function ReferenceMap({ patient }: { patient: PatientPoint | null
         if (!cancelled) setData(json)
       })
       .catch((err) => {
-        console.error("Reference map error:", err)
         if (!cancelled) setError("Couldn't load the reference landscape.")
       })
       .finally(() => {
@@ -83,7 +89,7 @@ export default function ReferenceMap({ patient }: { patient: PatientPoint | null
     const x = (p: ReferencePoint) => p.VST_UMAP1_2D
     const y = (p: ReferencePoint) => p.VST_UMAP2_2D
 
-    const result: Partial<Plotly.PlotData>[] = []
+    const result: ScatterData[] = []
 
     if (!points.length || !field || !(field in (points[0] ?? {}))) {
       result.push({
@@ -120,7 +126,7 @@ export default function ReferenceMap({ patient }: { patient: PatientPoint | null
             color: labeled.map((p) => Number(p[field])),
             colorscale: "Turbo",
             showscale: true,
-            colorbar: { title: colorMode === "Age" ? "Age" : "HPV status score" },
+            colorbar: { title: { text: colorMode === "Age" ? "Age" : "HPV status score" } },
           },
           name: colorMode,
           opacity: 0.85,
@@ -173,7 +179,7 @@ export default function ReferenceMap({ patient }: { patient: PatientPoint | null
       result.push({
         x: [patient.umap1],
         y: [patient.umap2],
-        mode: "markers+text",
+        mode: "text+markers",
         type: "scatter",
         marker:
           paintValue !== null && paintValue !== undefined
