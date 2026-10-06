@@ -47,6 +47,12 @@ const QUALITATIVE_PALETTE = [
   "#22c55e", "#eab308", "#06b6d4", "#ec4899", "#64748b",
 ]
 
+function numericValue(v: unknown): number | null {
+  if (isUnlabeled(v)) return null
+  const value = Number(v)
+  return Number.isFinite(value) ? value : null
+}
+
 function isUnlabeled(v: unknown) {
   if (v === null || v === undefined) return true
   const s = String(v).trim().toLowerCase()
@@ -81,6 +87,18 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
     }
   }, [])
 
+  const numericMode = colorMode === "Age" || colorMode === "HPV status"
+  const numericRange = useMemo(() => {
+    if (colorMode === "HPV status") return [0, 1]
+    const values = (data?.points ?? []).map((p) => numericValue(p.age)).filter((v): v is number => v !== null)
+    const patientAge = numericValue(patient?.age)
+    if (patientAge !== null) values.push(patientAge)
+    if (!values.length) return [0, 100]
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+    return min === max ? [min - 1, max + 1] : [min, max]
+  }, [data, colorMode, patient?.age])
+
   const traces = useMemo(() => {
     if (!data) return []
     const field = COLOR_MODE_TO_FIELD[colorMode]
@@ -102,8 +120,8 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
         opacity: 0.85,
       })
     } else if (field === "age" || field === "hpv_score") {
-      const labeled = points.filter((p) => p[field] !== null && p[field] !== undefined)
-      const unlabeled = points.filter((p) => p[field] === null || p[field] === undefined)
+      const labeled = points.filter((p) => numericValue(p[field]) !== null)
+      const unlabeled = points.filter((p) => numericValue(p[field]) === null)
       if (unlabeled.length) {
         result.push({
           x: unlabeled.map(x),
@@ -124,9 +142,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
           marker: {
             size: 7,
             color: labeled.map((p) => Number(p[field])),
-            colorscale: "Turbo",
-            showscale: true,
-            colorbar: { title: { text: colorMode === "Age" ? "Age" : "HPV status score" } },
+            coloraxis: "coloraxis",
           },
           name: colorMode,
           opacity: 0.85,
@@ -182,8 +198,8 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
         mode: "text+markers",
         type: "scatter",
         marker:
-          paintValue !== null && paintValue !== undefined
-            ? { size: 18, color: [paintValue], colorscale: "Turbo", symbol: "diamond", line: { width: 3, color: "#fff" } }
+          numericValue(paintValue) !== null
+            ? { size: 18, color: [Number(paintValue)], coloraxis: "coloraxis", symbol: "diamond", line: { width: 3, color: "#fff" } }
             : { size: 18, color: "#ff4d6d", symbol: "diamond", line: { width: 3, color: "#fff" } },
         text: ["Patient"],
         textposition: "top center",
@@ -219,10 +235,25 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
           data={traces}
           layout={{
             autosize: true,
-            margin: { l: 40, r: 20, t: 10, b: 40 },
+            margin: { l: 40, r: numericMode ? 75 : 20, t: 10, b: numericMode ? 95 : 40 },
             xaxis: { title: { text: "UMAP 1" } },
             yaxis: { title: { text: "UMAP 2" } },
-            legend: { orientation: "v" },
+            legend: numericMode
+              ? { orientation: "h", x: 0, y: -0.2, xanchor: "left", yanchor: "top", font: { size: 11 } }
+              : { orientation: "v" },
+            coloraxis: numericMode ? {
+              cmin: numericRange[0],
+              cmax: numericRange[1],
+              colorscale: "Turbo",
+              colorbar: {
+                title: { text: colorMode === "Age" ? "Age (years)" : "HPV score", side: "right", font: { size: 12 } },
+                thickness: 12,
+                len: 0.85,
+                x: 1.02,
+                tickfont: { size: 11 },
+                ...(colorMode === "HPV status" ? { tickvals: [0, 0.2, 0.4, 0.6, 0.8, 1] } : {}),
+              },
+            } : undefined,
             paper_bgcolor: "rgba(0,0,0,0)",
             plot_bgcolor: "#ffffff",
           }}
