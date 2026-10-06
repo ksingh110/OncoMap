@@ -53,7 +53,7 @@ function isUnlabeled(v: unknown) {
   return s === "" || ["nan", "none", "missing", "na", "n/a"].includes(s)
 }
 
-export default function ReferenceMap({ patient }: { patient: PatientPoint | null }) {
+export default function ReferenceMap({ patient, compact = false }: { patient: PatientPoint | null; compact?: boolean }) {
   const [data, setData] = useState<ReferenceMapResponse | null>(null)
   const [colorMode, setColorMode] = useState<ColorMode>("Dataset")
   const [loading, setLoading] = useState(true)
@@ -196,9 +196,10 @@ export default function ReferenceMap({ patient }: { patient: PatientPoint | null
 
   return (
     <div className="bg-white border border-cyan-200 rounded-2xl p-6 shadow-lg">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
         <h3 className="font-semibold text-gray-800">Reference tumor landscape</h3>
         <select
+          aria-label="Color landscape by"
           value={colorMode}
           onChange={(e) => setColorMode(e.target.value as ColorMode)}
           className="rounded-lg border border-cyan-200 px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-400"
@@ -217,16 +218,17 @@ export default function ReferenceMap({ patient }: { patient: PatientPoint | null
         <Plot
           data={traces}
           layout={{
-            height: 560,
+            autosize: true,
             margin: { l: 40, r: 20, t: 10, b: 40 },
-            xaxis: { title: "VST_UMAP1_2D" },
-            yaxis: { title: "VST_UMAP2_2D" },
+            xaxis: { title: { text: "UMAP 1" } },
+            yaxis: { title: { text: "UMAP 2" } },
             legend: { orientation: "v" },
             paper_bgcolor: "rgba(0,0,0,0)",
             plot_bgcolor: "#ffffff",
           }}
           config={{ displayModeBar: false, responsive: true }}
-          style={{ width: "100%" }}
+          useResizeHandler
+          style={{ width: "100%", height: compact ? "clamp(300px, 48vh, 500px)" : 560 }}
         />
       )}
     </div>

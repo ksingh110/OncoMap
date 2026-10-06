@@ -132,8 +132,8 @@ def create_app(artifacts=None):
             upload.close()
             result = run_projection_and_prediction(artifacts, expr, age=age, gender=gender, hpv_status=hpv, k=15)
             payload = {"response_probability": result["response_probability"], "summary": result["summary"],
-                       "insights": result["insights"]}
-            # Neighbor-level information is not used by the UI; minimize returned data.
+                       "insights": result["insights"], "neighbors": result["neighbors"]}
+            # Explicit result export includes only reference neighbors, not uploaded expression.
             return jsonify(_json_safe(payload))
         except (ValueError, UnicodeError):
             return jsonify(error="Invalid input. Use one sample with unique genes and finite numeric expression values; check clinical fields."), 400
