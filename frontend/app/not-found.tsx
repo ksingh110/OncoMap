@@ -12,7 +12,7 @@ export default function NotFound() {
     <main className={styles.page}>
       <Link href="/" className={styles.brand} aria-label="OncoMap home">
         <img
-          src="/Users/krishaysingh/Documents/OncoMap/frontend//public/android-chrome-512x512.png/public/android-chrome-512x512.png/android-chrome-192x192.png"
+          src="android-chrome-192x192.png"
           alt=""
           className={styles.brandMark}
         />
