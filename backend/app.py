@@ -8,7 +8,7 @@ from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
 from privacy import MemoryOnlyRequest, MAX_REQUEST_BYTES
-from services import load_artifacts, parse_uploaded_expression, run_projection_and_prediction
+from services import load_artifacts, parse_uploaded_expression, run_projection_and_prediction, REFERENCE_METADATA_FIELDS
 
 
 def _json_safe(value):
@@ -110,7 +110,7 @@ def create_app(artifacts=None):
     @app.get("/reference-map")
     def reference_map_response():
         cols = ["sampleName", "VST_UMAP1_2D", "VST_UMAP2_2D"]
-        for col in artifacts.color_fields.values():
+        for col in [*artifacts.color_fields.values(), *REFERENCE_METADATA_FIELDS]:
             if col and col in reference_map.columns and col not in cols:
                 cols.append(col)
         return jsonify(_json_safe({"points": reference_map[cols].to_dict(orient="records"),

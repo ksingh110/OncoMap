@@ -50,6 +50,7 @@ export default function ModelPage() {
   const fileInput = useRef<HTMLInputElement | null>(null)
   const [loading, setLoading] = useState(false)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
+  const [selectedNeighborId, setSelectedNeighborId] = useState<string | null>(null)
   const [result, setResult] = useState<number | null>(null)
   const [level, setLevel] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -70,6 +71,7 @@ export default function ModelPage() {
     activeRequest.current = null
     if (fileInput.current) fileInput.current.value = ""
     setAnalysis(null)
+    setSelectedNeighborId(null)
     setResult(null)
     setLoading(false)
     setLevel(null)
@@ -109,6 +111,7 @@ export default function ModelPage() {
     setShowResultDialog(false)
     setLoading(true)
     setAnalysis(null)
+    setSelectedNeighborId(null)
     setResult(null)
 
     const formData = new FormData()
@@ -185,6 +188,7 @@ export default function ModelPage() {
     activeRequest.current = controller
     setLoading(true)
     setAnalysis(null)
+    setSelectedNeighborId(null)
     setResult(null)
     try {
       const response = await fetch(sampleFile, { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: controller.signal })
@@ -202,6 +206,8 @@ export default function ModelPage() {
       }
     }
   }
+
+  const selectedNeighbor = analysis?.neighbors.find((neighbor) => neighbor.sample_id === selectedNeighborId)
 
   const downloadResults = () => {
     if (!analysis) return
@@ -403,7 +409,7 @@ export default function ModelPage() {
                       </div>
                       <p className="text-xl font-semibold mb-2 text-gray-800">Drop your file here</p>
                       <p className="text-gray-500 mb-4">or click to browse</p>
-                      <p className="text-sm text-gray-400">Supported: CSV or TSV · one sample · up to 4 MiB</p>
+                      <p className="text-sm text-gray-400">Supported: CSV or TSV · log2-TPM values · one sample · up to 4 MiB</p>
                     </div>
                   )}
 
@@ -595,7 +601,7 @@ export default function ModelPage() {
           </div>
 
           <div className="min-w-0 space-y-5">
-            {patientPoint ? <ReferenceMap patient={patientPoint} compact /> : (
+            {patientPoint ? <ReferenceMap patient={patientPoint} compact selected={selectedNeighborId} onSelect={setSelectedNeighborId} neighbor={selectedNeighbor} /> : (
               <div className="rounded-2xl border border-cyan-100 bg-white p-6 text-sm text-gray-500">Landscape coordinates are unavailable for this analysis.</div>
             )}
             <div className="bg-white rounded-2xl border border-cyan-100 overflow-hidden">
@@ -603,13 +609,14 @@ export default function ModelPage() {
                 <h3 className="font-semibold text-gray-800">Nearest reference samples</h3>
                 <span className="text-xs text-cyan-700">{analysis?.neighbors.length ?? 0} samples</span>
               </div>
+              <p className="px-5 pb-3 text-xs text-gray-500">Expression distance: Euclidean distance across standardized log2-TPM gene values. Lower means closer; this is not distance on the UMAP plot.</p>
               <div className="overflow-x-auto max-h-52 overflow-y-auto">
                 <table className="w-full text-sm text-left">
                   <thead className="text-xs text-gray-500 bg-cyan-50/50"><tr><th className="px-5 py-3">Rank</th><th className="px-5 py-3">Sample</th><th className="px-5 py-3">Dataset</th><th className="px-5 py-3">Distance</th></tr></thead>
                   <tbody>{analysis?.neighbors.map((neighbor) => (
                     <tr key={neighbor.rank} className="border-t border-cyan-50">
                       <td className="px-5 py-3 text-cyan-700">{neighbor.rank}</td>
-                      <td className="px-5 py-3 font-medium text-gray-700">{neighbor.sample_id}</td>
+                      <td className="px-5 py-3 font-medium text-gray-700"><button type="button" onClick={() => setSelectedNeighborId(neighbor.sample_id)} className="text-cyan-800 underline underline-offset-2 hover:text-cyan-600">{neighbor.sample_id}</button></td>
                       <td className="px-5 py-3 text-gray-500">{neighbor.metadata.dataset ?? "—"}</td>
                       <td className="px-5 py-3 tabular-nums text-gray-500">{neighbor.distance.toFixed(3)}</td>
                     </tr>
@@ -617,6 +624,7 @@ export default function ModelPage() {
                 </table>
                 {!analysis?.neighbors.length && <p className="px-5 py-4 text-sm text-gray-500">No neighbor details available.</p>}
               </div>
+
             </div>
           </div>
           </div>
