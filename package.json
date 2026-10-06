@@ -1,23 +1,14 @@
 {
-  "overrides": {
-    "postcss": "^8.5.29",
-    "lodash": "^4.18.1",
-    "nanoid@^3.0.0": "^3.3.18",
-    "browserslist": "^4.29.3",
-    "baseline-browser-mapping": "^2.11.0",
-    "source-map-js": "^1.2.2"
-  },
-  "scripts": {
-    "dev": "npm --prefix frontend run dev --",
-    "build": "npm --prefix frontend run build --",
-    "start": "npm --prefix frontend run start --"
-  },
-  "name": "oncomap",
-  "private": true,
-  "workspaces": [
-    "frontend"
-  ],
   "dependencies": {
-    "next": "16.3.8"
+    "plotly.js": "4.1.2",
+    "react-plotly.js": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/plotly.js": "^3.0.10"
+  },
+  "overrides": {
+    "lodash": "^4.18.1",
+    "nanoid": "^3.3.18",
+    "source-map-js": "^1.2.2"
   }
 }

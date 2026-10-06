@@ -22,8 +22,7 @@ const policy = [
 ].join('; ')
 
 const nextConfig = {
-  turbopack: { root: fileURLToPath(new URL("..", import.meta.url)) },
-  outputFileTracingRoot: fileURLToPath(new URL("..", import.meta.url)),
+  turbopack: { root: fileURLToPath(new URL(".", import.meta.url)) },
   poweredByHeader: false,
   images: { unoptimized: true },
   async headers() {
