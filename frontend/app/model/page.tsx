@@ -477,7 +477,7 @@ export default function ModelPage() {
                     <h3 className="font-semibold text-gray-800">Test Samples</h3>
                   </div>
                   <p className="text-sm text-gray-600 mb-4">
-                    Try the model with synthetic log2-TPM demo data
+                    Try the model with pre-loaded patient samples
                   </p>
                   <div className="space-y-3">
                     {TEST_SAMPLES.map((sample) => (
@@ -601,7 +601,7 @@ export default function ModelPage() {
           </div>
 
           <div className="min-w-0 space-y-5">
-            {patientPoint ? <ReferenceMap patient={patientPoint} compact /> : (
+            {patientPoint ? <ReferenceMap patient={patientPoint} compact selected={selectedNeighborId} onSelect={setSelectedNeighborId} neighbor={selectedNeighbor} /> : (
               <div className="rounded-2xl border border-cyan-100 bg-white p-6 text-sm text-gray-500">Landscape coordinates are unavailable for this analysis.</div>
             )}
             <div className="bg-white rounded-2xl border border-cyan-100 overflow-hidden">
@@ -624,21 +624,7 @@ export default function ModelPage() {
                 </table>
                 {!analysis?.neighbors.length && <p className="px-5 py-4 text-sm text-gray-500">No neighbor details available.</p>}
               </div>
-              {selectedNeighbor && (
-                <section aria-label="Ranked sample metadata" className="m-4 rounded-xl border border-cyan-200 p-4">
-                  <div className="flex justify-between gap-3 mb-3">
-                    <h4 className="font-semibold text-gray-800 break-all">{selectedNeighbor.sample_id}</h4>
-                    <button type="button" onClick={() => setSelectedNeighborId(null)} className="text-sm text-cyan-800 underline">Close metadata</button>
-                  </div>
-                  <table className="w-full text-sm text-left">
-                    <thead><tr><th className="py-2">Field</th><th className="py-2">Value</th></tr></thead>
-                    <tbody>{Object.entries({ Rank: selectedNeighbor.rank, "Expression distance": selectedNeighbor.distance, Weight: selectedNeighbor.weight,
-                      "UMAP 1": selectedNeighbor.embedding?.umap1, "UMAP 2": selectedNeighbor.embedding?.umap2, ...selectedNeighbor.metadata }).map(([field, value]) => (
-                      <tr key={field} className="border-t border-cyan-100"><th className="py-2 font-medium text-gray-600">{field.replaceAll("_", " ")}</th><td className="py-2 text-gray-800 break-words">{value == null ? "Not available" : String(value)}</td></tr>
-                    ))}</tbody>
-                  </table>
-                </section>
-              )}
+
             </div>
           </div>
           </div>

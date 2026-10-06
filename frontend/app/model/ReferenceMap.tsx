@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import type { ScatterData } from "plotly.js"
+import type { Neighbor } from "@/lib/results"
 import { apiUrl } from "@/lib/api"
 
 // Plotly touches `window`, so it can only load on the client.
@@ -59,10 +60,9 @@ function isUnlabeled(v: unknown) {
   return s === "" || ["nan", "none", "missing", "na", "n/a"].includes(s)
 }
 
-export default function ReferenceMap({ patient, compact = false }: { patient: PatientPoint | null; compact?: boolean }) {
+export default function ReferenceMap({ patient, compact = false, selected, onSelect, neighbor }: { patient: PatientPoint | null; compact?: boolean; selected: string | null; onSelect: (sample: string | null) => void; neighbor?: Neighbor }) {
   const [data, setData] = useState<ReferenceMapResponse | null>(null)
   const [colorMode, setColorMode] = useState<ColorMode>("Dataset")
-  const [selected, setSelected] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -218,7 +218,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
     return result
   }, [data, colorMode, patient])
 
-  const selectedPoint = data?.points.find((point) => point.sampleName === selected)
+  const selectedPoint: (Record<string, unknown> & { sampleName: string }) | undefined = data?.points.find((point) => point.sampleName === selected) ?? (neighbor ? { ...neighbor.metadata, sampleName: neighbor.sample_id, VST_UMAP1_2D: neighbor.embedding?.umap1, VST_UMAP2_2D: neighbor.embedding?.umap2 } : undefined)
   const selectedPatient = selected === "__uploaded_patient__" && patient
   const details: Array<[string, unknown]> = selectedPatient
     ? [["Age (years)", patient.age], ["HPV score", patient.hpvScore], ["UMAP 1", patient.umap1], ["UMAP 2", patient.umap2]]
@@ -229,6 +229,8 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
       ["HPV score", selectedPoint.hpv_score],
       ["UMAP 1", selectedPoint.VST_UMAP1_2D], ["UMAP 2", selectedPoint.VST_UMAP2_2D],
     ] : []
+
+  if (neighbor) details.push(["Rank", neighbor.rank], ["Expression distance", neighbor.distance], ["Weight", neighbor.weight])
 
   return (
     <div className="bg-white border border-cyan-200 rounded-2xl p-6 shadow-lg">
@@ -259,7 +261,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
           onClick={(event) => {
             const value = event.points[0]?.customdata
             if (!Array.isArray(value)) return
-            setSelected(value[0] === "patient" ? "__uploaded_patient__" : String(value[1]))
+            onSelect(value[0] === "patient" ? "__uploaded_patient__" : String(value[1]))
           }}
           layout={{
             autosize: true,
@@ -297,7 +299,7 @@ export default function ReferenceMap({ patient, compact = false }: { patient: Pa
               <h4 className="font-semibold text-gray-800">Sample details</h4>
               <p className="text-sm text-gray-600 break-all">{selectedPatient ? "Uploaded patient" : selectedPoint?.sampleName}</p>
             </div>
-            <button type="button" onClick={() => setSelected(null)} className="text-sm text-cyan-800 underline">Close details</button>
+            <button type="button" onClick={() => onSelect(null)} className="text-sm text-cyan-800 underline">Close details</button>
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
             {details.map(([label, value]) => (
