@@ -1,0 +1,36 @@
+.page {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #123a46;
+  background: radial-gradient(ellipse at 25% 20%, #dcf5f6 0, transparent 52%), radial-gradient(ellipse at 85% 80%, #dff5ed 0, transparent 48%), #f6fbfc;
+}
+.brand { display: inline-flex; align-items: center; gap: 9px; font-size: 19px; font-weight: 700; letter-spacing: -.7px; text-decoration: none; }
+.brandMark { font-size: 28px; color: #0891b2; }
+.card { width: min(100%, 560px); text-align: center; }
+.scene { width: 100%; position: relative; margin-top: 22px; }
+.art { display: block; width: 100%; height: auto; overflow: visible; }
+.digit { fill: #163e4b; font: 700 144px system-ui, sans-serif; letter-spacing: -8px; }
+.copy { position: absolute; top: 48%; left: 0; right: 0; padding: 0 8px; }
+.eyebrow { font-size: clamp(9px, 2.2vw, 11px); font-weight: 600; color: #078c98; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 10px; }
+.copy h2 { font-size: clamp(21px, 5vw, 32px); font-weight: 650; line-height: 1.15; letter-spacing: -1px; margin: 0 0 10px; }
+.copy > p:last-child { font-size: clamp(10px, 2.8vw, 14px); color: #68838b; line-height: 1.5; margin: 0; }
+.homeButton { position: absolute; top: 74.09%; left: 25%; width: 50%; height: 11.82%; border: 1px solid #b6d9dc; border-radius: 5% / 23.08%; background: #ffffffcc; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: clamp(11px, 3vw, 15px); font-weight: 600; color: #145d68; text-decoration: none; transition: background .2s, box-shadow .2s; }
+.homeButton:hover { background: #e8f8f7; box-shadow: 0 4px 20px #0891b212; }
+.homeButton:focus-visible, .brand:focus-visible { outline: 3px solid #0891b2; outline-offset: 5px; }
+.homeButton span { font-size: 19px; }
+.footnote { font-size: 11px; color: #8da4aa; margin: 6px 0 0; }
+.animatedDna { pointer-events: none; }
+.staticDna { display: none; }
+.outline { stroke-dasharray: 1; stroke-dashoffset: 1; animation: trace 10s linear infinite; }
+@keyframes trace { 0%, 40% { stroke-dashoffset: 1; opacity: 1; } 75%, 86% { stroke-dashoffset: 0; opacity: 1; } 94%, 100% { stroke-dashoffset: 0; opacity: 0; } }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .animatedDna { display: none; }
+  .staticDna { display: block; }
+  .outline { animation: none; stroke-dashoffset: 0; }
+  .homeButton { transition: none; }
+}

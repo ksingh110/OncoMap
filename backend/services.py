@@ -11,7 +11,7 @@ import pandas as pd
 def _load_knn_projector_module():
     import importlib.util
     import sys
-    mod_path = "knn_map_projection.py"
+    mod_path = Path(__file__).resolve().parent / "knn_map_projection.py"
     spec = importlib.util.spec_from_file_location("knn_map_projection", str(mod_path))
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Could not import module from {mod_path}")
@@ -21,23 +21,54 @@ def _load_knn_projector_module():
     return mod
 
 
-def parse_uploaded_expression(file_bytes: bytes, filename: str) -> pd.DataFrame:
+MAX_GENE_ROWS = 60_000
 
-    if filename.lower().endswith(".tsv"):
-        df = pd.read_csv(pd.io.common.BytesIO(file_bytes), sep="\t")
-    else:
-        df = pd.read_csv(pd.io.common.BytesIO(file_bytes))
-    if df.empty or df.shape[1] < 2:
-        raise ValueError("Uploaded file must have at least two columns.")
-    first = str(df.columns[0]).strip().lower()
-    if first != "gene":
-        df = df.rename(columns={df.columns[0]: "gene"})
-    df["gene"] = df["gene"].astype(str)
-    if df.shape[1] == 2:
-        out = pd.DataFrame(df.iloc[:, 1].to_numpy(), index=df["gene"], columns=["uploaded_sample"])
-    else:
-        out = df.set_index("gene")
-    return out.astype(float)
+
+def parse_uploaded_expression(source, filename: str) -> pd.DataFrame:
+    """Parse a single sample in memory; never accept paths, compressed or serialized input."""
+    from io import BytesIO
+    if not filename.lower().endswith((".csv", ".tsv")):
+        raise ValueError("Only CSV and TSV are supported")
+    if isinstance(source, bytes):
+        source = BytesIO(source)
+    if not hasattr(source, "read"):
+        raise ValueError("An in-memory upload stream is required")
+    import csv
+    import re
+
+    def lines():
+        while True:
+            line = source.readline(1024)
+            if not line:
+                break
+            if len(line) >= 1024:
+                raise ValueError("CSV record is too long")
+            yield line.decode("utf-8-sig")
+
+    reader = csv.reader(lines(), delimiter="\t" if filename.lower().endswith(".tsv") else ",", strict=True)
+    try:
+        header = next(reader)
+        if len(header) != 2 or any(len(value) > 128 for value in header):
+            raise ValueError("Upload exactly two columns and one sample")
+        genes, values, seen = [], [], set()
+        for row in reader:
+            if len(row) != 2 or len(genes) >= MAX_GENE_ROWS:
+                raise ValueError("Invalid number of columns or genes")
+            gene = row[0].strip()
+            if not re.fullmatch(r"[A-Za-z0-9_.:-]{1,128}", gene) or gene in seen:
+                raise ValueError("Invalid or duplicate gene identifiers")
+            value = float(row[1])
+            if not np.isfinite(value) or not 0 <= value <= 1e12:
+                raise ValueError("Invalid expression values")
+            seen.add(gene)
+            genes.append(gene)
+            values.append(value)
+        if not genes:
+            raise ValueError("Empty expression file")
+    except (csv.Error, StopIteration) as error:
+        raise ValueError("Invalid CSV or TSV") from error
+    # Discard the supplied sample header, which may contain an identifier.
+    return pd.DataFrame(values, index=pd.Index(genes, name="gene"), columns=["uploaded_sample"])
 
 
 @dataclass
@@ -52,12 +83,12 @@ class AppArtifacts:
 def load_artifacts(
    
 ) -> AppArtifacts:
-    ref_log2 = pd.read_parquet("projector_data/ref_log2tpm.parquet")
-    ref_coords = pd.read_parquet("projector_data/ref_coords.parquet")
-    ref_coords_proj = pd.read_parquet("projector_data/ref_coords_projector.parquet")
-    ref_meta = pd.read_parquet("projector_data/ref_meta.parquet")
-    from pathlib import Path
-    fgenes = json.loads(Path("projector_data/feature_genes.json").read_text(encoding="utf-8")).get("feature_genes", [])
+    data_dir = Path(__file__).resolve().parent / "projector_data"
+    ref_log2 = pd.read_parquet(data_dir / "ref_log2tpm.parquet")
+    ref_coords = pd.read_parquet(data_dir / "ref_coords.parquet")
+    ref_coords_proj = pd.read_parquet(data_dir / "ref_coords_projector.parquet")
+    ref_meta = pd.read_parquet(data_dir / "ref_meta.parquet")
+    fgenes = json.loads((data_dir / "feature_genes.json").read_text(encoding="utf-8")).get("feature_genes", [])
     if "sampleName" not in ref_meta.columns:
         raise ValueError("ref_meta.parquet must include sampleName")
     ref_meta = ref_meta.set_index("sampleName")
@@ -72,8 +103,8 @@ def load_artifacts(
         umap_cols=("VST_UMAP1_2D", "VST_UMAP2_2D"),
     )
 
-    response_model = joblib.load("projector_data/response_model.pkl")
-    response_meta = json.loads(Path("projector_data/response_model_meta.json").read_text(encoding="utf-8"))
+    response_model = joblib.load(data_dir / "response_model.pkl")
+    response_meta = json.loads((data_dir / "response_model_meta.json").read_text(encoding="utf-8"))
     color_fields = {
         "dataset": "dataset" if "dataset" in ref_coords.columns else None,
         "gender": "gender" if "gender" in ref_meta.columns else None,

@@ -35,3 +35,10 @@ _**Founded by [Krishay Singh](https://github.com/ksingh110) and [Anshul Raghav](
 <img width="800" height="353" alt="oncomap_demo-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/497a8563-65d1-46df-aa88-3b9846137ebb" />
 </p>
 
+
+## Security and genetic data privacy
+
+The hardened analysis flow processes uploads in bounded server memory and does
+not save uploaded files or prediction results. See [SECURITY.md](SECURITY.md) for
+the exact privacy boundary, v0/Render configuration, tests, and host-level settings
+that must be verified before uploading real patient data.
