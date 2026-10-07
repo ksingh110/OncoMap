@@ -42,3 +42,65 @@ The hardened analysis flow processes uploads in bounded server memory and does
 not save uploaded files or prediction results. See [SECURITY.md](SECURITY.md) for
 the exact privacy boundary, v0/Render configuration, tests, and host-level settings
 that must be verified before uploading real patient data.
+
+## Documentation
+
+The [Docs tab](https://oncomap.us/docs) explains upload preparation, the reference
+landscape, sample metadata, distance, downloads, and data handling. Its source is
+[frontend/app/docs/page.tsx](frontend/app/docs/page.tsx).
+
+### Input format and units
+
+Upload a UTF-8 CSV or TSV with a header and exactly two columns: gene identifier
+and expression value, representing one sample. Identifiers must be unique and
+values finite and non-negative. Limits: 4 MiB and 60,000 genes; at least 20 genes
+must overlap the projector feature set.
+
+The reference projector expects **log2-TPM on the reference scale**. Raw counts
+and untransformed TPM are not interchangeable with this input. The API does not
+infer units or convert them automatically. The bundled demo remains unchanged;
+verify its preprocessing and units before interpreting its results.
+
+### Results, metadata, and distance
+
+Click a landscape point or ranked sample ID to inspect its available metadata in
+the shared panel below the landscape and above the ranking. Missing metadata is
+shown as “Not available.” Minimize/restore preserves results in page memory;
+resetting or leaving the page clears them.
+
+Nearest samples use Euclidean distance over overlapping expression features,
+after standardizing each gene with the reference mean and population standard
+deviation. This is **not UMAP coordinate distance**, a percentage, or a calibrated
+clinical confidence score. Inverse-distance weights determine the projected
+landscape position. Large distances warrant checking units and compatibility;
+there is no clinical threshold established by this display.
+
+Download results (JSON) exports the prediction and percentage, interpretation,
+projected embedding, projection summary, neighborhood insights, and nearest
+reference sample IDs, ranks, distances, weights, embeddings, and approved metadata.
+It excludes raw uploaded expression and the original filename. Downloading saves
+an explicit copy to the user's device.
+
+### Local development
+
+The web application lives in `frontend`; the Python API lives in `backend`.
+
+```sh
+cd frontend
+pnpm install --frozen-lockfile
+NEXT_PUBLIC_API_URL=http://127.0.0.1:5000 pnpm dev
+```
+
+In a separate terminal from the repository root:
+
+```sh
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+ONCOMAP_ALLOWED_ORIGINS=http://localhost:3000 PYTHONPATH=backend python backend/app.py
+```
+
+For hosted deployments, use `frontend` as the Vercel root and configure
+`NEXT_PUBLIC_API_URL` with the HTTPS API origin. See [SECURITY.md](SECURITY.md) for
+deployment settings and the application-level non-retention boundary. The hosted
+API receives data in memory; processing is not entirely in the browser.
