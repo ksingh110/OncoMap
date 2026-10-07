@@ -281,8 +281,8 @@ export default function ModelPage() {
             <Link href="/model" className="text-sm font-medium text-gray-700 hover:text-cyan-600 transition-colors">
               Our Model
             </Link>
-            <Link href="/business" className="text-sm font-medium text-gray-700 hover:text-cyan-600 transition-colors">
-              Business
+            <Link href="/docs" className="text-sm font-medium text-gray-700 hover:text-cyan-600 transition-colors">
+              Docs
             </Link>
           </div>
         </div>
