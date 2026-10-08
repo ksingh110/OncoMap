@@ -535,11 +535,8 @@ export default function ModelPage() {
           <DialogHeader className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-cyan-700">Your analysis</p>
             <DialogTitle className="text-xl sm:text-2xl font-bold text-left text-gray-800">
-              Immunotherapy Analysis Results
+              Analysis
             </DialogTitle>
-            <DialogDescription className="text-left text-gray-500">
-              Prediction based on uploaded transcriptomic data
-            </DialogDescription>
           </DialogHeader>
           <Button onClick={() => setShowResultDialog(false)} variant="outline" size="icon" aria-label="Minimize results" title="Minimize results" className="shrink-0 border-cyan-200 text-cyan-700">
             <Minimize2 className="h-4 w-4" />

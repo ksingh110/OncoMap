@@ -209,7 +209,7 @@ export default function ReferenceMap({ patient, compact = false, selected, onSel
           numericValue(paintValue) !== null
             ? { size: 18, color: [Number(paintValue)], coloraxis: "coloraxis", symbol: "diamond", line: { width: 3, color: "#fff" } }
             : { size: 18, color: "#ff4d6d", symbol: "diamond", line: { width: 3, color: "#fff" } },
-        text: ["Patient"],
+        text: [""],
         textposition: "top center",
         name: "Uploaded patient",
       })
@@ -235,7 +235,6 @@ export default function ReferenceMap({ patient, compact = false, selected, onSel
   return (
     <div className="bg-white border border-cyan-200 rounded-2xl p-6 shadow-lg">
       <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-800">Reference tumor landscape</h3>
         <select
           aria-label="Color landscape by"
           value={colorMode}
@@ -251,11 +250,6 @@ export default function ReferenceMap({ patient, compact = false, selected, onSel
 
       {loading && <p className="text-sm text-gray-500 py-12 text-center">Loading reference landscape…</p>}
       {error && <p className="text-sm text-rose-600 py-12 text-center">{error}</p>}
-
-      {!loading && !error && (
-        <p className="text-xs text-gray-500 mb-2">Click a point to view its sample details.</p>
-      )}
-      {!loading && !error && (
         <Plot
           data={traces}
           onClick={(event) => {
