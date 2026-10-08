@@ -250,6 +250,7 @@ export default function ReferenceMap({ patient, compact = false, selected, onSel
 
       {loading && <p className="text-sm text-gray-500 py-12 text-center">Loading reference landscape…</p>}
       {error && <p className="text-sm text-rose-600 py-12 text-center">{error}</p>}
+      {!loading && !error && (
         <Plot
           data={traces}
           onClick={(event) => {
